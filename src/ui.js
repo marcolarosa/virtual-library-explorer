@@ -81,8 +81,8 @@ function setupFilters() {
   filterContainer.innerHTML = ''
   for (const src of SOURCES) {
     const label = document.createElement('label')
-    label.className = 'filter-chip'
-    label.style.setProperty('--chip-color', src.color)
+    label.className = 'flex items-center gap-1 py-[3px] px-2 rounded-[10px] bg-surface border border-border text-dim text-[11px] cursor-pointer hover:bg-surface2'
+    label.style.borderLeft = `3px solid ${src.color}`
     label.innerHTML = `<input type="checkbox" checked data-source="${src.id}"> ${src.shortLabel}`
     label.querySelector('input').addEventListener('change', e => {
       if (e.target.checked) state.filters.hiddenSources.delete(src.id)
@@ -97,7 +97,7 @@ function setupFilters() {
   typeContainer.innerHTML = ''
   for (const type of types) {
     const label = document.createElement('label')
-    label.className = 'filter-chip'
+    label.className = 'flex items-center gap-1 py-[3px] px-2 rounded-[10px] bg-surface border border-border text-dim text-[11px] cursor-pointer hover:bg-surface2'
     label.innerHTML = `<input type="checkbox" checked data-type="${type}"> ${type}`
     label.querySelector('input').addEventListener('change', e => {
       if (e.target.checked) state.filters.hiddenTypes.delete(type)
@@ -126,23 +126,23 @@ export function renderSourcePanel() {
   for (const src of SOURCES) {
     const status = state.sourceStatuses.get(src.id) || { status: 'idle' }
     const row = document.createElement('div')
-    row.className = 'source-row'
+    row.className = 'flex items-center gap-1.5 px-3 py-1 text-xs'
     row.dataset.sourceId = src.id
 
     const statusText = {
       idle: 'idle',
       querying: '<span class="blink">querying…</span>',
       done: `${status.count} results${status.latency ? ' · ' + status.latency + 'ms' : ''}`,
-      error: '<span class="error">error</span>',
+      error: '<span class="text-[#ff6b6b]">error</span>',
     }[status.status] || 'idle'
 
     row.innerHTML = `
-      <span class="source-swatch" style="background:${src.color}"></span>
-      <label class="source-toggle">
+      <span class="w-2 h-2 rounded-full shrink-0" style="background:${src.color}"></span>
+      <label class="flex items-center gap-1 cursor-pointer flex-1">
         <input type="checkbox" ${src.enabled ? 'checked' : ''}>
-        <span class="source-label">${src.shortLabel}</span>
+        <span class="text-text">${src.shortLabel}</span>
       </label>
-      <span class="source-status">${statusText}${src.requiresKey && !API_KEYS[src.id] ? ' <span class="key-warn" title="No API key set">⚿</span>' : ''}</span>
+      <span class="text-[10px] text-dim font-mono">${statusText}${src.requiresKey && !API_KEYS[src.id] ? ' <span class="cursor-help" title="No API key set">⚿</span>' : ''}</span>
     `
     row.querySelector('input').addEventListener('change', e => {
       src.enabled = e.target.checked
