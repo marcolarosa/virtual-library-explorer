@@ -55,7 +55,11 @@ function setupControls() {
 
   $('toggle-labels').addEventListener('click', () => {
     state.labelsVisible = !state.labelsVisible
-    $('toggle-labels').classList.toggle('active', state.labelsVisible)
+    const btn = $('toggle-labels')
+    btn.classList.toggle('text-accent',   state.labelsVisible)
+    btn.classList.toggle('border-accent', state.labelsVisible)
+    btn.classList.toggle('text-dim',      !state.labelsVisible)
+    btn.classList.toggle('border-border', !state.labelsVisible)
     refreshGraph()
   })
 
@@ -222,11 +226,11 @@ function setupDetailPanel() {
 export function showDetailPanel(node) {
   selectedNode = node
   renderDetailPanel(node)
-  $('detail-panel').classList.remove('hidden')
+  $('detail-panel').classList.remove('translate-x-full')
 }
 
 export function hideDetailPanel() {
-  $('detail-panel').classList.add('hidden')
+  $('detail-panel').classList.add('translate-x-full')
   selectedNode = null
   if (state.linkModeActive) {
     state.linkModeActive = false
@@ -329,12 +333,13 @@ export function updateStatusBar() {
 
   bar.innerHTML = [...state.sourceStatuses.entries()].map(([id, s]) => {
     const src = SOURCES.find(x => x.id === id)
-    const cls = s.status === 'error' ? 'status-error' : s.status === 'querying' ? 'status-querying' : 'status-done'
     const label = s.status === 'querying' ? '…'
       : s.status === 'done' ? `${s.count}`
       : s.status === 'error' ? '✕'
       : ''
-    return `<span class="status-chip ${cls}" style="border-color:${src?.color || '#888'}"
+    const chipBase = 'font-mono text-[11px] py-0.5 px-2 rounded-xl border bg-[rgba(8,12,16,0.8)] whitespace-nowrap'
+    const clsExtra = s.status === 'error' ? ' text-[#ff6b6b]' : s.status === 'querying' ? ' opacity-70' : ''
+    return `<span class="${chipBase}${clsExtra}" style="border-color:${src?.color || '#888'}"
       title="${src?.label || id}: ${s.status}${s.latency ? ' · ' + s.latency + 'ms' : ''}"
     >${src?.shortLabel || id} ${label}</span>`
   }).join('')
@@ -360,10 +365,10 @@ function openKeysModal() {
   const keyed = SOURCES.filter(s => s.requiresKey)
   for (const src of keyed) {
     const row = document.createElement('div')
-    row.className = 'keys-row'
+    row.className = 'mb-3'
     row.innerHTML = `
-      <label style="color:${src.color}">${src.label}</label>
-      <input type="text" class="key-input" data-source="${src.id}"
+      <label class="block text-[11px] mb-1 font-semibold" style="color:${src.color}">${src.label}</label>
+      <input type="text" class="key-input w-full bg-bg border border-border text-text rounded-[4px] py-1.5 px-2 font-mono text-xs outline-none focus:border-accent" data-source="${src.id}"
         value="${API_KEYS[src.id] || ''}"
         placeholder="Paste API key…"
         spellcheck="false" autocomplete="off">
@@ -410,12 +415,11 @@ function setupImportExport() {
 // ─── Drawer helpers ───────────────────────────────────────────────────────────
 
 function toggleDrawer(id) {
-  const el = $(id)
-  el.classList.toggle('collapsed')
+  $(id).classList.toggle('-translate-x-full')
 }
 
 function closeDrawer(id) {
-  $(id).classList.add('collapsed')
+  $(id).classList.add('-translate-x-full')
 }
 
 // ─── Bus event listeners ──────────────────────────────────────────────────────
