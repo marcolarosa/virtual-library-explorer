@@ -1,12 +1,38 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full overflow-hidden">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Library Graph Explorer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bg:       '#080c10',
+            surface:  '#0f1520',
+            surface2: '#16202e',
+            border:   '#1e2d42',
+            text:     '#c8d8e8',
+            dim:      '#5a7090',
+            bright:   '#e8f0f8',
+            gold:     '#ffd700',
+            accent:   '#3a8fff',
+          },
+          fontFamily: {
+            mono: ["'JetBrains Mono'", "'Fira Code'", "'Courier New'", 'monospace'],
+            sans: ["'Inter'", "'Segoe UI'", 'system-ui', 'sans-serif'],
+          },
+          spacing: { panel: '320px' },
+          boxShadow: { panel: '0 4px 24px rgba(0,0,0,0.6)' },
+        },
+      },
+    }
+  </script>
   <link rel="stylesheet" href="styles/main.css">
 </head>
-<body>
+<body class="h-full bg-bg text-text font-sans text-[13px]">
 <div id="app">
 
   <!-- 3D canvas fills the screen -->
