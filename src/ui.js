@@ -245,37 +245,38 @@ function renderDetailPanel(node) {
   const src = SOURCES.find(s => s.id === node.sourceId)
   const result = node.result || {}
 
+  const tagCls = 'text-[11px] py-0.5 px-2 rounded-[10px] bg-surface2 border border-border text-text cursor-pointer transition-colors duration-200 hover:bg-accent hover:text-white hover:border-accent'
   const subjectTags = (node.rawSubjects || [])
-    .map(s => `<span class="tag" data-search="${s}">${s}</span>`).join('')
+    .map(s => `<span class="${tagCls}" data-search="${s}">${s}</span>`).join('')
   const creatorTags = (node.rawCreators || [])
-    .map(c => `<span class="tag" data-search="${c}">${c}</span>`).join('')
+    .map(c => `<span class="${tagCls}" data-search="${c}">${c}</span>`).join('')
 
   $('detail-content').innerHTML = `
-    <div class="detail-badges">
-      <span class="badge type-badge">${node.type}</span>
-      <span class="badge source-badge" style="background:${src?.color || '#888'}">${src?.shortLabel || node.sourceId}</span>
-      ${node.expanded ? '<span class="badge expanded-badge">expanded</span>' : ''}
-      ${isPinned ? '<span class="badge pinned-badge">pinned</span>' : ''}
+  <div class="flex gap-1.5 flex-wrap mb-2.5">
+    <span class="text-[10px] py-0.5 px-2 rounded-[10px] font-mono uppercase tracking-[0.5px] bg-surface2 text-dim">${node.type}</span>
+    <span class="text-[10px] py-0.5 px-2 rounded-[10px] font-mono uppercase tracking-[0.5px] text-black font-semibold" style="background:${src?.color || '#888'}">${src?.shortLabel || node.sourceId}</span>
+    ${node.expanded ? '<span class="text-[10px] py-0.5 px-2 rounded-[10px] font-mono uppercase tracking-[0.5px] bg-[rgba(58,143,255,0.2)] text-accent">expanded</span>' : ''}
+    ${isPinned ? '<span class="text-[10px] py-0.5 px-2 rounded-[10px] font-mono uppercase tracking-[0.5px] bg-[rgba(255,215,0,0.2)] text-gold">pinned</span>' : ''}
+  </div>
+  <h2 class="text-[15px] font-semibold text-bright mb-1.5 leading-[1.4]">${node.label || 'Untitled'}</h2>
+  ${result.date ? `<div class="font-mono text-[11px] text-dim mb-2">${result.date}</div>` : ''}
+  ${result.thumbnailUrl ? `<img class="w-full max-h-[160px] object-cover rounded-[4px] mb-2.5" src="${result.thumbnailUrl}" alt="">` : ''}
+  ${result.description ? `<p class="text-xs text-text leading-[1.6] mb-2.5">${result.description}</p>` : ''}
+  ${creatorTags ? `<div class="mb-2"><span class="text-[10px] uppercase tracking-[1px] text-dim block mb-1">Creators</span><div class="flex flex-wrap gap-1">${creatorTags}</div></div>` : ''}
+  ${subjectTags ? `<div class="mb-2"><span class="text-[10px] uppercase tracking-[1px] text-dim block mb-1">Subjects</span><div class="flex flex-wrap gap-1">${subjectTags}</div></div>` : ''}
+  ${result.url && result.url !== '#' ? `<a class="inline-block text-xs text-accent no-underline mb-3 hover:underline" href="${result.url}" target="_blank" rel="noopener">View original record ↗</a>` : ''}
+  <div class="flex flex-col gap-1.5 mt-3">
+    <button id="pin-btn" class="py-2 px-3 rounded-[6px] bg-surface2 border cursor-pointer text-xs transition-colors duration-200 hover:bg-border ${isPinned ? 'text-gold border-gold' : 'text-text border-border'}">${isPinned ? '★ Unpin' : '☆ Pin to collection'}</button>
+    ${canExpand ? '<button id="expand-btn" class="py-2 px-3 rounded-[6px] bg-surface2 border border-border text-text cursor-pointer text-xs transition-colors duration-200 hover:bg-border">Explore from here</button>' : ''}
+    ${!state.importedMode ? '<button id="link-btn" class="py-2 px-3 rounded-[6px] bg-surface2 border border-border text-text cursor-pointer text-xs transition-colors duration-200 hover:bg-border">Link to another node</button>' : ''}
+  </div>
+  ${isPinned ? `
+    <div class="mt-3">
+      <label class="text-[10px] uppercase tracking-[1px] text-dim block mb-1">Note</label>
+      <textarea id="annotation-input" rows="3" placeholder="Add a note…" class="w-full bg-bg border border-border text-text rounded-[4px] p-1.5 text-xs font-sans resize-y">${node.annotation || ''}</textarea>
     </div>
-    <h2 class="detail-title">${node.label || 'Untitled'}</h2>
-    ${result.date ? `<div class="detail-date">${result.date}</div>` : ''}
-    ${result.thumbnailUrl ? `<img class="detail-thumb" src="${result.thumbnailUrl}" alt="">` : ''}
-    ${result.description ? `<p class="detail-desc">${result.description}</p>` : ''}
-    ${creatorTags ? `<div class="detail-section"><span class="detail-section-label">Creators</span><div class="tag-list">${creatorTags}</div></div>` : ''}
-    ${subjectTags ? `<div class="detail-section"><span class="detail-section-label">Subjects</span><div class="tag-list">${subjectTags}</div></div>` : ''}
-    ${result.url && result.url !== '#' ? `<a class="detail-link" href="${result.url}" target="_blank" rel="noopener">View original record ↗</a>` : ''}
-    <div class="detail-actions">
-      <button id="pin-btn" class="${isPinned ? 'btn-pinned' : ''}">${isPinned ? '★ Unpin' : '☆ Pin to collection'}</button>
-      ${canExpand ? '<button id="expand-btn">Explore from here</button>' : ''}
-      ${!state.importedMode ? '<button id="link-btn">Link to another node</button>' : ''}
-    </div>
-    ${isPinned ? `
-      <div class="detail-annotation">
-        <label>Note</label>
-        <textarea id="annotation-input" rows="3" placeholder="Add a note…">${node.annotation || ''}</textarea>
-      </div>
-    ` : ''}
-  `
+  ` : ''}
+`
 
   // Wire up actions
   $('pin-btn').addEventListener('click', () => {
@@ -300,7 +301,8 @@ function renderDetailPanel(node) {
       state.linkModeActive = true
       state.linkModeSourceNode = node
       linkBtn.textContent = 'Click another node to link…'
-      linkBtn.classList.add('active')
+      linkBtn.classList.remove('bg-surface2', 'text-text', 'border-border')
+      linkBtn.classList.add('bg-accent', 'text-white', 'border-accent')
     })
   }
 
@@ -310,7 +312,7 @@ function renderDetailPanel(node) {
   }
 
   // Clickable subject/creator tags trigger new search
-  $('detail-content').querySelectorAll('.tag[data-search]').forEach(tag => {
+  $('detail-content').querySelectorAll('[data-search]').forEach(tag => {
     tag.addEventListener('click', () => {
       $('search-input').value = tag.dataset.search
       runSearch(tag.dataset.search)
