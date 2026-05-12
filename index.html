@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Library Graph Explorer</title>
+  <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- 3D canvas fills the screen -->
+  <div id="graph-container"></div>
+
+  <!-- Search bar -->
+  <header id="search-bar">
+    <button id="collection-toggle" class="icon-btn" title="Toggle collection">⊞</button>
+    <input id="search-input" type="text" placeholder="Search across libraries…" autocomplete="off" spellcheck="false">
+    <button id="search-btn">Search</button>
+    <button id="import-btn" class="icon-btn" title="Load graph">↑</button>
+    <button id="export-btn" class="icon-btn" title="Export collection">↓</button>
+    <button id="keys-btn" class="icon-btn" title="API Keys">⚿</button>
+  </header>
+
+  <!-- Per-source status chips -->
+  <div id="status-bar"></div>
+
+  <!-- Collection drawer (left) -->
+  <aside id="collection-drawer" class="drawer drawer-left collapsed">
+    <div class="drawer-header">
+      <span>Collection</span>
+      <button class="drawer-close" id="collection-close">×</button>
+    </div>
+    <div id="collection-list"></div>
+    <div class="drawer-footer">
+      <button id="export-btn-2">Export collection JSON</button>
+    </div>
+  </aside>
+
+  <!-- Detail panel (right) -->
+  <aside id="detail-panel" class="drawer drawer-right hidden">
+    <button id="detail-close">×</button>
+    <div id="detail-content"></div>
+  </aside>
+
+  <!-- Source panel (top-right) -->
+  <div id="source-panel">
+    <div id="source-panel-header">
+      Sources
+      <button id="source-panel-toggle">−</button>
+    </div>
+    <div id="source-list"></div>
+  </div>
+
+  <!-- Controls (bottom-left) -->
+  <div id="controls">
+    <button id="zoom-fit"      title="Zoom to fit">⊡</button>
+    <button id="pause-physics" title="Pause physics">⏸</button>
+    <button id="toggle-labels" class="active" title="Toggle labels">Aa</button>
+    <button id="reset-graph"   title="Reset graph">↺</button>
+  </div>
+
+  <!-- Source + type filters (bottom, left of controls) -->
+  <div id="filter-panel">
+    <div id="filter-sources" class="filter-group"></div>
+    <div id="filter-types"   class="filter-group"></div>
+  </div>
+
+  <!-- Node cap warning -->
+  <div id="node-cap-warning" class="hidden">
+    Graph limit reached (500 nodes) — reset to continue exploring.
+  </div>
+
+  <!-- API Keys modal -->
+  <div id="keys-modal" class="modal hidden">
+    <div class="modal-box">
+      <h3>API Keys</h3>
+      <p class="modal-note">
+        Keys are stored in your browser's <code>localStorage</code>.
+        Use throwaway dev keys — they may be visible to CORS proxy operators if the direct request fails.
+      </p>
+      <div id="keys-form"></div>
+      <div class="modal-footer">
+        <button id="keys-cancel">Cancel</button>
+        <button id="keys-save">Save keys</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden file input for import -->
+  <input type="file" id="import-file" accept=".json" style="display:none">
+
+</div>
+
+<!-- CDN dependencies — load before app modules -->
+<script src="https://cdn.jsdelivr.net/npm/3d-force-graph/dist/3d-force-graph.min.js"></script>
+
+<script type="module" src="src/main.js"></script>
+</body>
+</html>
