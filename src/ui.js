@@ -162,7 +162,7 @@ function setupCollectionDrawer() {
 export function renderCollectionDrawer() {
   const list = $('collection-list')
   if (state.collection.size === 0) {
-    list.innerHTML = '<p class="empty-hint">No items pinned yet.<br>Click a node and pin it.</p>'
+    list.innerHTML = '<p class="text-dim px-3.5 py-5 text-center leading-[1.6]">No items pinned yet.<br>Click a node and pin it.</p>'
     return
   }
 
@@ -177,18 +177,18 @@ export function renderCollectionDrawer() {
   for (const [sourceId, items] of bySource) {
     const src = SOURCES.find(s => s.id === sourceId)
     const group = document.createElement('div')
-    group.className = 'collection-group'
-    group.innerHTML = `<div class="collection-group-header" style="color:${src?.color || '#888'}">${src?.label || sourceId}</div>`
+    group.className = 'mb-2'
+    group.innerHTML = `<div class="font-mono text-[10px] uppercase tracking-[1px] px-3.5 py-1.5 font-semibold" style="color:${src?.color || '#888'}">${src?.label || sourceId}</div>`
 
     for (const [nodeId, entry] of items) {
       const item = document.createElement('div')
-      item.className = 'collection-item'
+      item.className = 'px-3.5 py-2 border-b border-border hover:bg-surface2'
       item.innerHTML = `
-        <div class="collection-item-title">${truncate(entry.label, 50)}</div>
-        <textarea class="collection-annotation" placeholder="Add note…" rows="2">${entry.annotation || ''}</textarea>
-        <div class="collection-item-actions">
-          <button class="btn-small" data-action="focus" data-id="${nodeId}">Find</button>
-          <button class="btn-small btn-danger" data-action="unpin" data-id="${nodeId}">Remove</button>
+        <div class="text-xs text-bright mb-1">${truncate(entry.label, 50)}</div>
+        <textarea class="w-full bg-bg border border-border text-text rounded-[4px] px-1.5 py-1 text-[11px] font-sans resize-y mb-1" placeholder="Add note…" rows="2">${entry.annotation || ''}</textarea>
+        <div class="flex gap-1.5">
+          <button class="py-0.5 px-2 text-[11px] rounded-[4px] bg-surface2 border border-border text-text cursor-pointer hover:bg-border" data-action="focus" data-id="${nodeId}">Find</button>
+          <button class="py-0.5 px-2 text-[11px] rounded-[4px] bg-surface2 border border-border text-[#ff6b6b] cursor-pointer hover:bg-[rgba(255,107,107,0.15)]" data-action="unpin" data-id="${nodeId}">Remove</button>
         </div>
       `
       item.querySelector('[data-action="unpin"]').addEventListener('click', () => {
