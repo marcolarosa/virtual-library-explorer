@@ -87,7 +87,7 @@ function setupFilters() {
     const label = document.createElement('label')
     label.className = 'flex items-center gap-1 py-[3px] px-2 rounded-[10px] bg-surface border border-border text-dim text-[11px] cursor-pointer hover:bg-surface2'
     label.style.borderLeft = `3px solid ${src.color}`
-    label.innerHTML = `<input type="checkbox" checked data-source="${src.id}"> ${src.shortLabel}`
+    label.innerHTML = `<input type="checkbox" class="accent-accent" checked data-source="${src.id}"> ${src.shortLabel}`
     label.querySelector('input').addEventListener('change', e => {
       if (e.target.checked) state.filters.hiddenSources.delete(src.id)
       else state.filters.hiddenSources.add(src.id)
@@ -102,7 +102,7 @@ function setupFilters() {
   for (const type of types) {
     const label = document.createElement('label')
     label.className = 'flex items-center gap-1 py-[3px] px-2 rounded-[10px] bg-surface border border-border text-dim text-[11px] cursor-pointer hover:bg-surface2'
-    label.innerHTML = `<input type="checkbox" checked data-type="${type}"> ${type}`
+    label.innerHTML = `<input type="checkbox" class="accent-accent" checked data-type="${type}"> ${type}`
     label.querySelector('input').addEventListener('change', e => {
       if (e.target.checked) state.filters.hiddenTypes.delete(type)
       else state.filters.hiddenTypes.add(type)
@@ -143,7 +143,7 @@ export function renderSourcePanel() {
     row.innerHTML = `
       <span class="w-2 h-2 rounded-full shrink-0" style="background:${src.color}"></span>
       <label class="flex items-center gap-1 cursor-pointer flex-1">
-        <input type="checkbox" ${src.enabled ? 'checked' : ''}>
+        <input type="checkbox" class="accent-accent" ${src.enabled ? 'checked' : ''}>
         <span class="text-text">${src.shortLabel}</span>
       </label>
       <span class="text-[10px] text-dim font-mono">${statusText}${src.requiresKey && !API_KEYS[src.id] ? ' <span class="cursor-help" title="No API key set">⚿</span>' : ''}</span>
