@@ -33,82 +33,82 @@
   <link rel="stylesheet" href="styles/main.css">
 </head>
 <body class="h-full bg-bg text-text font-sans text-[13px]">
-<div id="app">
+<div id="app" class="relative w-screen h-screen">
 
   <!-- 3D canvas fills the screen -->
-  <div id="graph-container"></div>
+  <div id="graph-container" class="absolute inset-0"></div>
 
   <!-- Search bar -->
-  <header id="search-bar">
-    <button id="collection-toggle" class="icon-btn" title="Toggle collection">⊞</button>
-    <input id="search-input" type="text" placeholder="Search across libraries…" autocomplete="off" spellcheck="false">
-    <button id="search-btn">Search</button>
-    <button id="import-btn" class="icon-btn" title="Load graph">↑</button>
-    <button id="export-btn" class="icon-btn" title="Export collection">↓</button>
-    <button id="keys-btn" class="icon-btn" title="API Keys">⚿</button>
+  <header id="search-bar" class="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-surface border border-border rounded-[32px] px-2.5 py-1.5 shadow-panel z-[100] min-w-[480px]">
+    <button id="collection-toggle" class="bg-transparent border border-border text-text rounded-[20px] py-1 px-2 cursor-pointer text-[14px] transition-colors duration-200 hover:bg-border" title="Toggle collection">⊞</button>
+    <input id="search-input" type="text" class="flex-1 bg-transparent border-none text-bright font-mono text-[14px] outline-none px-1.5 placeholder:text-dim" placeholder="Search across libraries…" autocomplete="off" spellcheck="false">
+    <button id="search-btn" class="bg-accent text-white border border-accent rounded-[20px] py-1 px-3 cursor-pointer text-xs transition-colors duration-200 whitespace-nowrap hover:bg-[#2070dd]">Search</button>
+    <button id="import-btn" class="bg-transparent border border-border text-text rounded-[20px] py-1 px-2 cursor-pointer text-[14px] transition-colors duration-200 hover:bg-border" title="Load graph">↑</button>
+    <button id="export-btn" class="bg-transparent border border-border text-text rounded-[20px] py-1 px-2 cursor-pointer text-[14px] transition-colors duration-200 hover:bg-border" title="Export collection">↓</button>
+    <button id="keys-btn"   class="bg-transparent border border-border text-text rounded-[20px] py-1 px-2 cursor-pointer text-[14px] transition-colors duration-200 hover:bg-border" title="API Keys">⚿</button>
   </header>
 
   <!-- Per-source status chips -->
-  <div id="status-bar"></div>
+  <div id="status-bar" class="absolute top-16 left-1/2 -translate-x-1/2 flex gap-1.5 flex-wrap justify-center z-[100] pointer-events-none"></div>
 
   <!-- Collection drawer (left) -->
-  <aside id="collection-drawer" class="drawer drawer-left collapsed">
-    <div class="drawer-header">
+  <aside id="collection-drawer" class="absolute top-0 bottom-0 w-panel bg-surface border border-border border-l-0 rounded-r-md flex flex-col transition-transform duration-200 ease-in-out z-[200] overflow-hidden left-0 -translate-x-full">
+    <div class="flex items-center justify-between px-3.5 py-3 border-b border-border font-semibold text-bright shrink-0">
       <span>Collection</span>
-      <button class="drawer-close" id="collection-close">×</button>
+      <button id="collection-close" class="bg-transparent border-none text-dim cursor-pointer text-[18px] px-1 hover:text-bright">×</button>
     </div>
-    <div id="collection-list"></div>
-    <div class="drawer-footer">
-      <button id="export-btn-2">Export collection JSON</button>
+    <div id="collection-list" class="flex-1 overflow-y-auto py-2"></div>
+    <div class="py-2.5 px-3.5 border-t border-border shrink-0">
+      <button id="export-btn-2" class="w-full py-2 bg-surface2 border border-border text-text rounded-[6px] cursor-pointer hover:bg-border">Export collection JSON</button>
     </div>
   </aside>
 
   <!-- Detail panel (right) -->
-  <aside id="detail-panel" class="drawer drawer-right hidden">
-    <button id="detail-close">×</button>
+  <aside id="detail-panel" class="absolute top-0 bottom-0 w-panel bg-surface border border-border border-r-0 rounded-l-md flex flex-col transition-transform duration-200 ease-in-out z-[200] overflow-y-auto p-4 right-0 translate-x-full">
+    <button id="detail-close" class="absolute top-[10px] right-[10px] bg-transparent border-none text-dim cursor-pointer text-[20px] z-[1] hover:text-bright">×</button>
     <div id="detail-content"></div>
   </aside>
 
   <!-- Source panel (top-right) -->
-  <div id="source-panel">
-    <div id="source-panel-header">
+  <div id="source-panel" class="absolute top-4 right-4 bg-surface border border-border rounded-[6px] shadow-panel z-[100] min-w-[200px]">
+    <div id="source-panel-header" class="flex items-center justify-between px-3 py-2 text-[11px] font-semibold uppercase tracking-[1px] text-dim">
       Sources
-      <button id="source-panel-toggle">−</button>
+      <button id="source-panel-toggle" class="bg-transparent border-none text-dim cursor-pointer text-[14px]">−</button>
     </div>
-    <div id="source-list"></div>
+    <div id="source-list" class="pt-1 pb-2"></div>
   </div>
 
   <!-- Controls (bottom-left) -->
-  <div id="controls">
-    <button id="zoom-fit"      title="Zoom to fit">⊡</button>
-    <button id="pause-physics" title="Pause physics">⏸</button>
-    <button id="toggle-labels" class="active" title="Toggle labels">Aa</button>
-    <button id="reset-graph"   title="Reset graph">↺</button>
+  <div id="controls" class="absolute bottom-6 left-4 flex flex-col gap-1.5 z-[100]">
+    <button id="zoom-fit"      class="w-9 h-9 bg-surface border border-border text-dim rounded-[6px] cursor-pointer text-[14px] shadow-panel transition-colors duration-200 hover:text-bright hover:bg-surface2" title="Zoom to fit">⊡</button>
+    <button id="pause-physics" class="w-9 h-9 bg-surface border border-border text-dim rounded-[6px] cursor-pointer text-[14px] shadow-panel transition-colors duration-200 hover:text-bright hover:bg-surface2" title="Pause physics">⏸</button>
+    <button id="toggle-labels" class="w-9 h-9 bg-surface border border-accent text-accent rounded-[6px] cursor-pointer text-[14px] shadow-panel transition-colors duration-200 hover:text-bright hover:bg-surface2" title="Toggle labels">Aa</button>
+    <button id="reset-graph"   class="w-9 h-9 bg-surface border border-border text-dim rounded-[6px] cursor-pointer text-[14px] shadow-panel transition-colors duration-200 hover:text-bright hover:bg-surface2" title="Reset graph">↺</button>
   </div>
 
   <!-- Source + type filters (bottom, left of controls) -->
-  <div id="filter-panel">
-    <div id="filter-sources" class="filter-group"></div>
-    <div id="filter-types"   class="filter-group"></div>
+  <div id="filter-panel" class="absolute bottom-6 left-16 z-[100] flex flex-col gap-1.5">
+    <div id="filter-sources" class="flex flex-wrap gap-1"></div>
+    <div id="filter-types"   class="flex flex-wrap gap-1"></div>
   </div>
 
   <!-- Node cap warning -->
-  <div id="node-cap-warning" class="hidden">
+  <div id="node-cap-warning" class="hidden absolute bottom-6 left-1/2 -translate-x-1/2 bg-[rgba(255,107,107,0.15)] border border-[#ff6b6b] text-[#ff6b6b] rounded-[6px] px-4 py-2 text-xs z-[100] pointer-events-none">
     Graph limit reached (500 nodes) — reset to continue exploring.
   </div>
 
   <!-- API Keys modal -->
-  <div id="keys-modal" class="modal hidden">
-    <div class="modal-box">
-      <h3>API Keys</h3>
-      <p class="modal-note">
+  <div id="keys-modal" class="hidden absolute inset-0 bg-black/70 flex items-center justify-center z-[500]">
+    <div class="bg-surface border border-border rounded-[6px] p-6 w-[480px] max-w-[90vw] shadow-panel">
+      <h3 class="text-bright mb-2">API Keys</h3>
+      <p class="text-dim text-[11px] mb-4 leading-[1.5]">
         Keys are stored in your browser's <code>localStorage</code>.
         Use throwaway dev keys — they may be visible to CORS proxy operators if the direct request fails.
       </p>
       <div id="keys-form"></div>
-      <div class="modal-footer">
-        <button id="keys-cancel">Cancel</button>
-        <button id="keys-save">Save keys</button>
+      <div class="flex gap-2 justify-end mt-4">
+        <button id="keys-cancel" class="py-2 px-5 rounded-[6px] cursor-pointer text-[13px] border border-border bg-surface2 text-text">Cancel</button>
+        <button id="keys-save"   class="py-2 px-5 rounded-[6px] cursor-pointer text-[13px] border border-accent bg-accent text-white">Save keys</button>
       </div>
     </div>
   </div>
