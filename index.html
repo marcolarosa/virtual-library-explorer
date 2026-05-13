@@ -45,7 +45,6 @@
     <button id="search-btn" class="bg-accent text-white border border-accent rounded-[20px] py-1 px-3 cursor-pointer text-xs transition-colors duration-200 whitespace-nowrap hover:bg-[#2070dd]">Search</button>
     <button id="import-btn" class="bg-transparent border border-border text-text rounded-[20px] py-1 px-2 cursor-pointer text-[14px] transition-colors duration-200 hover:bg-border" title="Load graph">↑</button>
     <button id="export-btn" class="bg-transparent border border-border text-text rounded-[20px] py-1 px-2 cursor-pointer text-[14px] transition-colors duration-200 hover:bg-border" title="Export collection">↓</button>
-    <button id="keys-btn"   class="bg-transparent border border-border text-text rounded-[20px] py-1 px-2 cursor-pointer text-[14px] transition-colors duration-200 hover:bg-border" title="API Keys">⚿</button>
   </header>
 
   <!-- Per-source status chips -->
@@ -95,24 +94,6 @@
   <!-- Node cap warning -->
   <div id="node-cap-warning" class="hidden absolute bottom-6 left-1/2 -translate-x-1/2 bg-[rgba(255,107,107,0.15)] border border-[#ff6b6b] text-[#ff6b6b] rounded-[6px] px-4 py-2 text-xs z-[100] pointer-events-none">
     Graph limit reached (500 nodes) — reset to continue exploring.
-  </div>
-
-  <!-- API Keys modal -->
-  <div id="keys-modal" class="hidden absolute inset-0 bg-black/70 z-[500]">
-  <div class="flex items-center justify-center w-full h-full">
-    <div class="bg-surface border border-border rounded-[6px] p-6 w-[480px] max-w-[90vw] shadow-panel">
-      <h3 class="text-bright mb-2">API Keys</h3>
-      <p class="text-dim text-[11px] mb-4 leading-[1.5]">
-        Keys are stored in your browser's <code>localStorage</code>.
-        Use throwaway dev keys — they may be visible to CORS proxy operators if the direct request fails.
-      </p>
-      <div id="keys-form"></div>
-      <div class="flex gap-2 justify-end mt-4">
-        <button id="keys-cancel" class="py-2 px-5 rounded-[6px] cursor-pointer text-[13px] border border-border bg-surface2 text-text">Cancel</button>
-        <button id="keys-save"   class="py-2 px-5 rounded-[6px] cursor-pointer text-[13px] border border-accent bg-accent text-white">Save keys</button>
-      </div>
-    </div>
-  </div>
   </div>
 
   <!-- Hidden file input for import -->

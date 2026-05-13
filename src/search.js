@@ -79,7 +79,7 @@ async function runSourceQuery(query, source, queryNodeId) {
   emit('source:status', { sourceId: source.id, status: 'querying' })
 
   try {
-    const results = await source.searchFn(query)
+    const results = await source.searchFn({ query })
     const latency = Date.now() - t0
 
     const newNodes = []

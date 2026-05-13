@@ -32,7 +32,7 @@ styles/main.css     — dark theme, CSS custom properties
 
 **State** (`src/state.js`): `state.nodes` and `state.edges` are `Map<id, object>`. These are the canonical source of truth; the graph gets a snapshot on each update.
 
-**Adapters** (`src/sources.js`): Every `searchFn` has signature `async (query, { apiKey, fetch } = {})` so the body has no implicit globals and can be lifted server-side without rewrites.
+**Adapters** (`src/sources.js`): Every `searchFn` has signature `async ({ query, limit, testing })` — a single options object. Callers pass `{ query }` (e.g. `source.searchFn({ query })`). The body has no implicit globals and can be lifted server-side without rewrites.
 
 **API keys**: Read via getters from `localStorage` (`apiKey:<sourceId>`). Set through the ⚿ keys modal in the UI. Sources with empty keys return `[]` silently. Keyed sources: `trove`, `europeana`, `rijksmuseum`, `dpla`.
 
