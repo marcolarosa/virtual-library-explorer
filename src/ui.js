@@ -11,6 +11,8 @@ import { debounce, truncate } from "./utils.js";
 const $ = (id) => document.getElementById(id);
 
 let selectedNode = null;
+let lastSourceId = null; // tracks source for back-button navigation
+let panelMode = null; // 'source' | 'node'
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 
@@ -61,10 +63,9 @@ function setupControls() {
 
     $("reset-graph").addEventListener("click", () => {
         if (!confirm("Reset the graph? Your collection is preserved.")) return;
-        const { resetGraph } = window.__appModules;
+        const { resetGraph, clearMap } = window.__appModules;
         resetGraph();
-        const { clearGraph } = window.__appModules;
-        clearGraph();
+        clearMap();
         updateStatusBar();
         hideDetailPanel();
         updateNodeCapWarning();
@@ -84,7 +85,7 @@ function setupFilters() {
         label.className =
             "flex items-center gap-1 py-[3px] px-2 rounded-[10px] bg-surface border border-border text-dim text-[11px] cursor-pointer hover:bg-surface2";
         label.style.borderLeft = `3px solid ${src.color}`;
-        label.innerHTML = `<input type="checkbox" class="accent-accent" checked data-source="${src.id}"> ${src.shortLabel}`;
+        label.innerHTML = `<input type="checkbox" class="accent-accent" checked data-source="${src.id}"> ${src.label}`;
         label.querySelector("input").addEventListener("change", (e) => {
             if (e.target.checked) state.filters.hiddenSources.delete(src.id);
             else state.filters.hiddenSources.add(src.id);
@@ -143,7 +144,7 @@ export function renderSourcePanel() {
       <span class="w-2 h-2 rounded-full shrink-0" style="background:${src.color}"></span>
       <label class="flex items-center gap-1 cursor-pointer flex-1">
         <input type="checkbox" class="accent-accent" ${src.enabled ? "checked" : ""}>
-        <span class="text-text">${src.shortLabel}</span>
+        <span class="text-text">${src.label}</span>
       </label>
       <span class="text-[10px] text-dim font-mono">${statusText}</span>
     `;
@@ -213,14 +214,83 @@ export function renderCollectionDrawer() {
     }
 }
 
+// ─── Source sidebar helpers ───────────────────────────────────────────────────
+
+function _getNodesForSource(sourceId) {
+    return [...state.nodes.values()].filter(
+        (n) => n.sourceId === sourceId && n.type !== "query" && n.type !== "source",
+    );
+}
+
+function _setPanelHeader({ sourceId, showBack }) {
+    const src = SOURCES.find((s) => s.id === sourceId);
+    const dot = $("panel-source-dot");
+    const title = $("panel-title");
+    const back = $("panel-back-btn");
+
+    if (src) {
+        dot.style.background = src.color;
+        dot.classList.remove("hidden");
+        title.textContent = src.label || src.shortLabel || sourceId;
+        title.style.color = src.color;
+    } else {
+        dot.classList.add("hidden");
+        title.textContent = "";
+        title.style.color = "";
+    }
+
+    back.classList.toggle("hidden", !showBack);
+}
+
+function showSourceSidebar(sourceId) {
+    lastSourceId = sourceId;
+    panelMode = "source";
+    _setPanelHeader({ sourceId, showBack: false });
+    _renderSourceList(sourceId);
+    $("detail-panel").classList.remove("translate-x-full");
+}
+
+function _renderSourceList(sourceId) {
+    const nodes = _getNodesForSource(sourceId);
+    const content = $("detail-content");
+
+    if (nodes.length === 0) {
+        content.innerHTML =
+            '<p class="text-dim text-xs text-center py-8 leading-[1.8]">No results yet.<br>Run a search to populate this source.</p>';
+        return;
+    }
+
+    content.innerHTML = "";
+    for (const node of nodes) {
+        const item = document.createElement("div");
+        item.className =
+            "flex items-start gap-2 py-2 px-1 border-b border-border cursor-pointer rounded-[4px] hover:bg-surface2";
+        item.innerHTML = `
+      ${node.thumbnailUrl ? `<img src="${node.thumbnailUrl}" class="w-12 h-10 object-cover rounded-[3px] shrink-0 mt-0.5" onerror="this.style.display='none'">` : ""}
+      <div class="flex-1 min-w-0">
+        <div class="text-xs text-bright font-medium leading-[1.3] mb-0.5 overflow-hidden" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${node.title || "Untitled"}</div>
+        ${node.date ? `<div class="text-[10px] text-dim">${node.date}</div>` : ""}
+        <div class="text-[10px] text-dim font-mono uppercase mt-0.5">${node.type || ""}</div>
+      </div>
+    `;
+        item.addEventListener("click", () => showDetailPanel(node, true));
+        content.appendChild(item);
+    }
+}
+
 // ─── Detail panel ─────────────────────────────────────────────────────────────
 
 function setupDetailPanel() {
     $("detail-close").addEventListener("click", hideDetailPanel);
+    $("panel-back-btn").addEventListener("click", () => {
+        if (lastSourceId) showSourceSidebar(lastSourceId);
+    });
 }
 
-export function showDetailPanel(node) {
+export function showDetailPanel(node, fromSource = false) {
     selectedNode = node;
+    panelMode = "node";
+    _setPanelHeader({ sourceId: node.sourceId, showBack: fromSource && !!lastSourceId });
     renderDetailPanel(node);
     $("detail-panel").classList.remove("translate-x-full");
 }
@@ -228,6 +298,8 @@ export function showDetailPanel(node) {
 export function hideDetailPanel() {
     $("detail-panel").classList.add("translate-x-full");
     selectedNode = null;
+    panelMode = null;
+    lastSourceId = null;
 }
 
 function renderDetailPanel(node) {
@@ -257,7 +329,7 @@ function renderDetailPanel(node) {
     $("detail-content").innerHTML = `
   <div class="flex gap-1.5 flex-wrap mb-2.5">
     <span class="text-[10px] py-0.5 px-2 rounded-[10px] font-mono uppercase tracking-[0.5px] bg-surface2 text-dim">${node.type}</span>
-    <span class="text-[10px] py-0.5 px-2 rounded-[10px] font-mono uppercase tracking-[0.5px] text-black font-semibold" style="background:${src?.color || "#888"}">${src?.shortLabel || node.sourceId}</span>
+    <span class="text-[10px] py-0.5 px-2 rounded-[10px] font-mono uppercase tracking-[0.5px] text-black font-semibold" style="background:${src?.color || "#888"}">${src?.label || node.sourceId}</span>
     ${node.expanded ? '<span class="text-[10px] py-0.5 px-2 rounded-[10px] font-mono uppercase tracking-[0.5px] bg-[rgba(58,143,255,0.2)] text-accent">expanded</span>' : ""}
     ${isPinned ? '<span class="text-[10px] py-0.5 px-2 rounded-[10px] font-mono uppercase tracking-[0.5px] bg-[rgba(255,215,0,0.2)] text-gold">pinned</span>' : ""}
   </div>
@@ -394,6 +466,17 @@ function closeDrawer(id) {
 // ─── Bus event listeners ──────────────────────────────────────────────────────
 
 function setupBusListeners() {
+    on("source:select", (sourceId) => {
+        if (sourceId) showSourceSidebar(sourceId);
+        else hideDetailPanel();
+    });
+
+    on("graph:update", () => {
+        if (panelMode === "source" && lastSourceId) {
+            _renderSourceList(lastSourceId);
+        }
+    });
+
     on("node:click", (node) => {
         showDetailPanel(node);
     });
