@@ -1,14 +1,10 @@
 export const state = {
   nodes: new Map(),        // id -> node object
-  edges: new Map(),        // id -> edge object
   collection: new Map(),   // nodeId -> { annotation, pinnedAt, result, label, sourceId }
   queryHistory: [],
   importedMode: false,
   nodeLimit: 500,
   labelsVisible: true,
-  physicsPaused: false,
-  linkModeActive: false,
-  linkModeSourceNode: null,
   filters: {
     hiddenSources: new Set(),
     hiddenTypes: new Set(),
@@ -39,10 +35,7 @@ export function saveCollectionToStorage() {
 
 export function resetGraph() {
   state.nodes.clear()
-  state.edges.clear()
   state.queryHistory = []
   state.importedMode = false
   state.sourceStatuses.clear()
-  state.linkModeActive = false
-  state.linkModeSourceNode = null
 }

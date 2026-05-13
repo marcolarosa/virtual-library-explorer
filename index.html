@@ -80,7 +80,6 @@
   <!-- Controls (bottom-left) -->
   <div id="controls" class="absolute bottom-6 left-4 flex flex-col gap-1.5 z-[100]">
     <button id="zoom-fit"      class="w-9 h-9 bg-surface border border-border text-dim rounded-[6px] cursor-pointer text-[14px] shadow-panel transition-colors duration-200 hover:text-bright hover:bg-surface2" title="Zoom to fit">⊡</button>
-    <button id="pause-physics" class="w-9 h-9 bg-surface border border-border text-dim rounded-[6px] cursor-pointer text-[14px] shadow-panel transition-colors duration-200 hover:text-bright hover:bg-surface2" title="Pause physics">⏸</button>
     <button id="toggle-labels" class="w-9 h-9 bg-surface border border-accent text-accent rounded-[6px] cursor-pointer text-[14px] shadow-panel transition-colors duration-200 hover:text-bright hover:bg-surface2" title="Toggle labels">Aa</button>
     <button id="reset-graph"   class="w-9 h-9 bg-surface border border-border text-dim rounded-[6px] cursor-pointer text-[14px] shadow-panel transition-colors duration-200 hover:text-bright hover:bg-surface2" title="Reset graph">↺</button>
   </div>
@@ -102,7 +101,14 @@
 </div>
 
 <!-- CDN dependencies — load before app modules -->
-<script src="https://cdn.jsdelivr.net/npm/3d-force-graph/dist/3d-force-graph.min.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
+  }
+}
+</script>
 
 <script type="module" src="src/main.js"></script>
 </body>

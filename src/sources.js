@@ -238,6 +238,8 @@ export const SOURCES = [
         color: "#1abc9c",
         searchFn: locSearchFn,
         enabled: true,
+        lat: 38.9,
+        lng: -77.0,
     },
     {
         id: "trove",
@@ -248,6 +250,8 @@ export const SOURCES = [
         color: "#2ecc71",
         searchFn: troveSearchFn,
         enabled: true,
+        lat: -35.3,
+        lng: 149.1,
     },
     {
         id: "europeana",
@@ -258,6 +262,8 @@ export const SOURCES = [
         color: "#3498db",
         searchFn: europeanaSearchFn,
         enabled: true,
+        lat: 50.8,
+        lng: 4.4,
     },
     // {
     //     id: "rijksmuseum",
@@ -280,6 +286,8 @@ export const SOURCES = [
         searchFn: dplaSearchFn,
         enabled: true,
         requiresKey: false,
+        lat: 42.4,
+        lng: -71.1,
     },
     {
         id: "slv",
@@ -291,6 +299,8 @@ export const SOURCES = [
         searchFn: slvSearchFn,
         enabled: true,
         requiresKey: false,
+        lat: -37.8,
+        lng: 144.9,
     },
 ];
 

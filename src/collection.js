@@ -1,8 +1,7 @@
 import { state, saveCollectionToStorage, resetGraph } from './state.js'
 import { emit } from './bus.js'
-import { addToGraph, clearGraph, makeSourceAnchor } from './graph.js'
+import { clearMap, syncAllSourceCards } from './mapview.js'
 import { SOURCES, getSource } from './sources.js'
-import { sourceAnchorId } from './utils.js'
 
 export function pinNode(node) {
   if (state.collection.has(node.id)) return
@@ -41,10 +40,7 @@ export function setAnnotation(nodeId, text) {
 }
 
 export function exportCollection() {
-  const pinnedIds = new Set(state.collection.keys())
   const nodes = []
-  const edges = []
-  const edgeSeen = new Set()
   const sourceIds = new Set()
 
   for (const [nodeId, entry] of state.collection) {
@@ -57,15 +53,6 @@ export function exportCollection() {
       annotation: entry.annotation,
       result: entry.result,
     })
-  }
-
-  for (const edge of state.edges.values()) {
-    const s = typeof edge.source === 'object' ? edge.source.id : edge.source
-    const t = typeof edge.target === 'object' ? edge.target.id : edge.target
-    if (pinnedIds.has(s) && pinnedIds.has(t) && !edgeSeen.has(edge.id)) {
-      edgeSeen.add(edge.id)
-      edges.push({ id: edge.id, source: s, target: t, type: edge.type, label: edge.label || '' })
-    }
   }
 
   const sources = SOURCES
@@ -81,7 +68,7 @@ export function exportCollection() {
     },
     sources,
     nodes,
-    edges,
+    edges: [],
   }
 
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
@@ -94,13 +81,13 @@ export function exportCollection() {
 }
 
 export function importGraph(data) {
-  if (!data.nodes || !data.edges) {
+  if (!data.nodes) {
     alert('Not a valid library graph file.')
     return
   }
 
   resetGraph()
-  clearGraph()
+  clearMap()
   state.importedMode = true
   state.queryHistory = data.meta?.query_history || []
 
@@ -108,24 +95,8 @@ export function importGraph(data) {
   const sourceColors = {}
   for (const s of (data.sources || [])) sourceColors[s.id] = s.color
 
-  const nodes = []
-  const edges = []
-  const anchorsSeen = new Set()
-
   for (const n of data.nodes) {
     const color = sourceColors[n.sourceId] || getSource(n.sourceId)?.color || '#888888'
-
-    // Ensure anchor exists
-    if (!anchorsSeen.has(n.sourceId)) {
-      anchorsSeen.add(n.sourceId)
-      const src = getSource(n.sourceId) || {
-        id: n.sourceId, label: n.sourceId, shortLabel: n.sourceId,
-        color, region: 'unknown',
-      }
-      const anchor = makeSourceAnchor(src)
-      state.nodes.set(anchor.id, anchor)
-      nodes.push(anchor)
-    }
 
     const node = {
       id: n.id,
@@ -141,22 +112,8 @@ export function importGraph(data) {
       annotation: n.annotation || '',
     }
     state.nodes.set(node.id, node)
-    nodes.push(node)
-
-    // result-to-anchor edge
-    const anchorId = sourceAnchorId(n.sourceId)
-    const aEdgeId = `rta::${n.id}::${anchorId}`
-    const aEdge = { id: aEdgeId, source: n.id, target: anchorId, type: 'result-to-anchor', crossSource: false, label: '' }
-    state.edges.set(aEdgeId, aEdge)
-    edges.push(aEdge)
   }
 
-  for (const e of data.edges) {
-    if (state.edges.has(e.id)) continue
-    state.edges.set(e.id, e)
-    edges.push({ ...e })
-  }
-
-  addToGraph(nodes, edges)
+  syncAllSourceCards()
   emit('import:done', data)
 }

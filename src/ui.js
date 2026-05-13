@@ -1,9 +1,9 @@
 import { state } from "./state.js";
-import { on, emit } from "./bus.js";
+import { on } from "./bus.js";
 import { SOURCES } from "./sources.js";
 import { pinNode, unpinNode, setAnnotation, exportCollection, importGraph } from "./collection.js";
-import { runSearch, expandNode, getNodeDepth, addUserLink } from "./search.js";
-import { zoomToFit, togglePhysics, refreshGraph } from "./graph.js";
+import { runSearch, expandNode, getNodeDepth } from "./search.js";
+import { zoomToFit, refreshMap } from "./mapview.js";
 import { debounce, truncate } from "./utils.js";
 
 // ─── DOM refs ─────────────────────────────────────────────────────────────────
@@ -49,12 +49,6 @@ function setupSearch() {
 function setupControls() {
     $("zoom-fit").addEventListener("click", zoomToFit);
 
-    $("pause-physics").addEventListener("click", () => {
-        const paused = togglePhysics();
-        $("pause-physics").textContent = paused ? "▶" : "⏸";
-        $("pause-physics").title = paused ? "Resume physics" : "Pause physics";
-    });
-
     $("toggle-labels").addEventListener("click", () => {
         state.labelsVisible = !state.labelsVisible;
         const btn = $("toggle-labels");
@@ -62,7 +56,7 @@ function setupControls() {
         btn.classList.toggle("border-accent", state.labelsVisible);
         btn.classList.toggle("text-dim", !state.labelsVisible);
         btn.classList.toggle("border-border", !state.labelsVisible);
-        refreshGraph();
+        refreshMap();
     });
 
     $("reset-graph").addEventListener("click", () => {
@@ -94,7 +88,7 @@ function setupFilters() {
         label.querySelector("input").addEventListener("change", (e) => {
             if (e.target.checked) state.filters.hiddenSources.delete(src.id);
             else state.filters.hiddenSources.add(src.id);
-            refreshGraph();
+            refreshMap();
         });
         filterContainer.appendChild(label);
     }
@@ -110,7 +104,7 @@ function setupFilters() {
         label.querySelector("input").addEventListener("change", (e) => {
             if (e.target.checked) state.filters.hiddenTypes.delete(type);
             else state.filters.hiddenTypes.add(type);
-            refreshGraph();
+            refreshMap();
         });
         typeContainer.appendChild(label);
     }
@@ -205,17 +199,13 @@ export function renderCollectionDrawer() {
                 unpinNode(nodeId);
                 renderCollectionDrawer();
                 if (selectedNode?.id === nodeId) renderDetailPanel(selectedNode);
-                refreshGraph();
+                refreshMap();
             });
             item.querySelector("textarea").addEventListener("change", (e) => {
                 setAnnotation(nodeId, e.target.value);
             });
             item.querySelector('[data-action="focus"]').addEventListener("click", () => {
-                const node = state.nodes.get(nodeId);
-                if (node && window.__graphInstance) {
-                    window.__graphInstance.centerAt(node.x, node.y, 500);
-                    window.__graphInstance.zoom(2, 500);
-                }
+                // map view focus not yet implemented
             });
             group.appendChild(item);
         }
@@ -238,11 +228,6 @@ export function showDetailPanel(node) {
 export function hideDetailPanel() {
     $("detail-panel").classList.add("translate-x-full");
     selectedNode = null;
-    if (state.linkModeActive) {
-        state.linkModeActive = false;
-        state.linkModeSourceNode = null;
-        emit("link-mode:cancel");
-    }
 }
 
 function renderDetailPanel(node) {
@@ -286,7 +271,6 @@ function renderDetailPanel(node) {
   <div class="flex flex-col gap-1.5 mt-3">
     <button id="pin-btn" class="py-2 px-3 rounded-[6px] bg-surface2 border cursor-pointer text-xs transition-colors duration-200 hover:bg-border ${isPinned ? "text-gold border-gold" : "text-text border-border"}">${isPinned ? "★ Unpin" : "☆ Pin to collection"}</button>
     ${canExpand ? '<button id="expand-btn" class="py-2 px-3 rounded-[6px] bg-surface2 border border-border text-text cursor-pointer text-xs transition-colors duration-200 hover:bg-border">Explore from here</button>' : ""}
-    ${!state.importedMode ? '<button id="link-btn" class="py-2 px-3 rounded-[6px] bg-surface2 border border-border text-text cursor-pointer text-xs transition-colors duration-200 hover:bg-border">Link to another node</button>' : ""}
   </div>
   ${
       isPinned
@@ -304,7 +288,7 @@ function renderDetailPanel(node) {
     $("pin-btn").addEventListener("click", () => {
         if (isPinned) unpinNode(node.id);
         else pinNode(node);
-        refreshGraph();
+        refreshMap();
         renderDetailPanel(state.nodes.get(node.id) || node);
         renderCollectionDrawer();
     });
@@ -314,17 +298,6 @@ function renderDetailPanel(node) {
         expandBtn.addEventListener("click", () => {
             expandNode(node);
             hideDetailPanel();
-        });
-    }
-
-    const linkBtn = $("link-btn");
-    if (linkBtn) {
-        linkBtn.addEventListener("click", () => {
-            state.linkModeActive = true;
-            state.linkModeSourceNode = node;
-            linkBtn.textContent = "Click another node to link…";
-            linkBtn.classList.remove("bg-surface2", "text-text", "border-border");
-            linkBtn.classList.add("bg-accent", "text-white", "border-accent");
         });
     }
 
@@ -422,14 +395,6 @@ function closeDrawer(id) {
 
 function setupBusListeners() {
     on("node:click", (node) => {
-        if (state.linkModeActive && state.linkModeSourceNode) {
-            if (node.id !== state.linkModeSourceNode.id) {
-                addUserLink(state.linkModeSourceNode, node);
-                state.linkModeActive = false;
-                state.linkModeSourceNode = null;
-            }
-            return;
-        }
         showDetailPanel(node);
     });
 
@@ -448,7 +413,7 @@ function setupBusListeners() {
 
     on("node:updated", (node) => {
         if (selectedNode?.id === node.id) renderDetailPanel(node);
-        refreshGraph();
+        refreshMap();
     });
 
     on("node-cap:reached", updateNodeCapWarning);
