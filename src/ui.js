@@ -153,27 +153,64 @@ function setupSourcePanel() {
 export function renderSourcePanel() {
     const list = $("source-list");
     list.innerHTML = "";
+
+    // Group sources by region
+    const byRegion = new Map();
     for (const src of SOURCES) {
-        const status = state.sourceStatuses.get(src.id) || { status: "idle" };
-        const row = document.createElement("div");
-        row.className = "flex items-center gap-1.5 px-3 py-1 text-xs cursor-pointer";
-        row.dataset.sourceId = src.id;
+        const region = src.region || "Other";
+        if (!byRegion.has(region)) byRegion.set(region, []);
+        byRegion.get(region).push(src);
+    }
 
-        const statusText =
-            {
-                idle: "idle",
-                querying: '<span class="blink">querying…</span>',
-                done: `${status.count} results${status.latency ? " · " + status.latency + "ms" : ""}`,
-                error: '<span class="text-[#ff6b6b]">error</span>',
-            }[status.status] || "idle";
+    // Sort regions alphabetically, then sort sources within each region
+    const regionOrder = ["Americas", "Europe", "Oceania", "Other"];
+    const sortedRegions = Array.from(byRegion.keys()).sort((a, b) => {
+        const aIdx = regionOrder.indexOf(a);
+        const bIdx = regionOrder.indexOf(b);
+        if (aIdx === -1 && bIdx === -1) return a.localeCompare(b);
+        if (aIdx === -1) return 1;
+        if (bIdx === -1) return -1;
+        return aIdx - bIdx;
+    });
 
-        row.innerHTML = `
-      <span class="w-2 h-2 rounded-full shrink-0" style="background:${src.color}"></span>
-      <span class="flex-1 text-text">${src.label}</span>
-      <span class="text-[10px] text-text font-mono">${statusText}</span>
-    `;
-        row.addEventListener("click", () => focusSource(src.id));
-        list.appendChild(row);
+    for (const region of sortedRegions) {
+        const regionColor = getRegionColor(region);
+        const group = document.createElement("div");
+        group.className = "mb-0.5";
+
+        // Region header
+        const header = document.createElement("div");
+        header.className = "font-mono text-[10px] uppercase tracking-[1px] px-3 py-1.5 font-semibold sticky top-0 bg-bg";
+        header.style.color = regionColor;
+        header.textContent = region;
+        group.appendChild(header);
+
+        // Sort sources alphabetically by label
+        const sources = byRegion.get(region).sort((a, b) => a.label.localeCompare(b.label));
+
+        for (const src of sources) {
+            const status = state.sourceStatuses.get(src.id) || { status: "idle" };
+            const row = document.createElement("div");
+            row.className = "flex items-center gap-1.5 px-3 py-1 text-xs cursor-pointer hover:bg-surface2 transition-colors";
+            row.dataset.sourceId = src.id;
+
+            const statusText =
+                {
+                    idle: "idle",
+                    querying: '<span class="blink">querying…</span>',
+                    done: `${status.count} results${status.latency ? " · " + status.latency + "ms" : ""}`,
+                    error: '<span class="text-[#ff6b6b]">error</span>',
+                }[status.status] || "idle";
+
+            row.innerHTML = `
+        <span class="w-2 h-2 rounded-full shrink-0" style="background:${getRegionColor(src.region)}"></span>
+        <span class="flex-1 text-text">${src.label}</span>
+        <span class="text-[10px] text-text font-mono">${statusText}</span>
+      `;
+            row.addEventListener("click", () => focusSource(src.id));
+            group.appendChild(row);
+        }
+        list.appendChild(group);
     }
 }
 

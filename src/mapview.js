@@ -207,6 +207,10 @@ export function focusSource(sourceId) {
 
         if (t < 1) {
             requestAnimationFrame(animate);
+        } else {
+            controls.target.set(0, 0, 0);
+            controls.autoRotate = true;
+            controls.update();
         }
     };
     animate();
