@@ -16,6 +16,18 @@ import { on, emit } from "./bus.js";
 const GLOBE_RADIUS = 100;
 const CAMERA_DISTANCE = 280;
 
+// Pulse animation config
+const PULSE_CONFIG = {
+    activeRingCount: 3,           // max concurrent expanding rings per source
+    activeRingLifetime: 1200,     // ms for each ring to expand and fade (searching)
+    activeRingDelay: 600,         // ms between new rings (searching)
+    activeGlowIntensity: 2.0,     // emissive when searching
+    steadyRingLifetime: 2000,     // ms for each ring (steady glow)
+    steadyRingDelay: 800,         // ms between new rings (steady glow)
+    steadyGlowIntensity: 0.8,     // emissive when has data
+    maxRingRadius: 12,            // how far rings expand (in units)
+};
+
 // ─── Module-level state ───────────────────────────────────────────────────────
 
 let scene, renderer, camera, controls, container;
@@ -24,6 +36,10 @@ let graphUpdateHandler = null;
 
 const anchorMeshes = new Map(); // sourceId -> THREE.Mesh
 const sourcesWithData = new Set(); // sourceIds that have returned data
+
+// Pulse animation state
+const pulseStates = new Map(); // sourceId -> { isSearching, ringQueue: [], nextRingTime: 0 }
+const ringMeshes = []; // all active ring meshes for cleanup/animation
 
 // ─── Coordinate helpers ───────────────────────────────────────────────────────
 
@@ -125,15 +141,139 @@ export function initMap(cont) {
     graphUpdateHandler = () => {};
     on("graph:update", graphUpdateHandler);
     on("source:status", (event) => {
-        if (event.status === "done" && event.count > 0) {
+        if (event.status === "querying") {
+            // Start pulse animation
+            if (!pulseStates.has(event.sourceId)) {
+                pulseStates.set(event.sourceId, {
+                    isSearching: true,
+                    nextRingTime: Date.now(),
+                });
+            } else {
+                pulseStates.get(event.sourceId).isSearching = true;
+            }
+            // Update anchor glow to active
+            const anchor = anchorMeshes.get(event.sourceId);
+            if (anchor?.userData.material) {
+                anchor.userData.material.emissiveIntensity = PULSE_CONFIG.activeGlowIntensity;
+            }
+        } else if (event.status === "done" && event.count > 0) {
             sourcesWithData.add(event.sourceId);
+            // Transition to steady glow
+            if (!pulseStates.has(event.sourceId)) {
+                pulseStates.set(event.sourceId, {
+                    isSearching: false,
+                    nextRingTime: Date.now(),
+                });
+            } else {
+                pulseStates.get(event.sourceId).isSearching = false;
+            }
+            // Update anchor glow to steady
+            const anchor = anchorMeshes.get(event.sourceId);
+            if (anchor?.userData.material) {
+                anchor.userData.material.emissiveIntensity = PULSE_CONFIG.steadyGlowIntensity;
+            }
         } else if (event.status === "error") {
             sourcesWithData.delete(event.sourceId);
+            // Stop pulse animation
+            pulseStates.delete(event.sourceId);
+            // Remove glow
+            const anchor = anchorMeshes.get(event.sourceId);
+            if (anchor?.userData.material) {
+                anchor.userData.material.emissiveIntensity = 0;
+            }
+            // Remove any rings for this source
+            for (let i = ringMeshes.length - 1; i >= 0; i--) {
+                if (ringMeshes[i].sourceId === event.sourceId) {
+                    scene.remove(ringMeshes[i].mesh);
+                    ringMeshes[i].mesh.geometry.dispose();
+                    ringMeshes[i].mesh.material.dispose();
+                    ringMeshes.splice(i, 1);
+                }
+            }
         }
     });
 
     window.addEventListener("resize", _onResize);
     _startRenderLoop();
+}
+
+// ─── Pulse animation ──────────────────────────────────────────────────────────
+
+function _createRing(sourceId, sourceColor) {
+    // Thin torus geometry that expands from the anchor
+    const geometry = new THREE.TorusGeometry(0.5, 0.15, 8, 32);
+    const material = new THREE.MeshBasicMaterial({
+        color: sourceColor,
+        transparent: true,
+        opacity: 1.0,
+    });
+    const ring = new THREE.Mesh(geometry, material);
+
+    const pos = lngLatToVec3(
+        SOURCES.find(s => s.id === sourceId).lng,
+        SOURCES.find(s => s.id === sourceId).lat
+    );
+    ring.position.copy(pos);
+    ring.lookAt(pos.clone().normalize().multiplyScalar(200)); // face outward
+
+    scene.add(ring);
+
+    return {
+        mesh: ring,
+        sourceId,
+        startTime: Date.now(),
+        startRadius: 0.5,
+    };
+}
+
+function _updatePulseAnimations() {
+    const now = Date.now();
+
+    // Update existing rings
+    for (let i = ringMeshes.length - 1; i >= 0; i--) {
+        const ring = ringMeshes[i];
+        const sourceId = ring.sourceId;
+        const state = pulseStates.get(sourceId);
+        const isSearching = state?.isSearching ?? false;
+        const lifetime = isSearching ? PULSE_CONFIG.activeRingLifetime : PULSE_CONFIG.steadyRingLifetime;
+
+        const elapsed = now - ring.startTime;
+        const progress = Math.min(elapsed / lifetime, 1);
+
+        // Expand radius
+        const radius = ring.startRadius + (PULSE_CONFIG.maxRingRadius - ring.startRadius) * progress;
+        ring.mesh.scale.set(radius, radius, radius);
+
+        // Fade opacity
+        ring.mesh.material.opacity = 1 - progress;
+
+        // Remove dead rings
+        if (progress >= 1) {
+            scene.remove(ring.mesh);
+            ring.mesh.geometry.dispose();
+            ring.mesh.material.dispose();
+            ringMeshes.splice(i, 1);
+        }
+    }
+
+    // Spawn new rings for active sources
+    for (const [sourceId, state] of pulseStates) {
+        if (!state.isSearching && ringMeshes.filter(r => r.sourceId === sourceId).length === 0) {
+            continue; // no more rings needed for steady glow
+        }
+
+        if (now >= state.nextRingTime) {
+            const source = SOURCES.find(s => s.id === sourceId);
+            if (source && source.lat != null && source.lng != null) {
+                const color = new THREE.Color(getRegionColor(source.region));
+                const ring = _createRing(sourceId, color);
+                ringMeshes.push(ring);
+
+                const delay = state.isSearching ? PULSE_CONFIG.activeRingDelay : PULSE_CONFIG.steadyRingDelay;
+                state.nextRingTime = now + delay;
+            }
+        }
+    }
 }
 
 // ─── Anchor creation ──────────────────────────────────────────────────────────
@@ -145,24 +285,39 @@ function _createSourceAnchors() {
         const pos = lngLatToVec3(source.lng, source.lat);
         const col = new THREE.Color(getRegionColor(source.region));
 
-        // Dot on surface
+        // Dot on surface with glow capability
+        const material = new THREE.MeshStandardMaterial({
+            color: col,
+            emissive: col,
+            emissiveIntensity: 0, // start off
+            metalness: 0,
+            roughness: 1,
+        });
         const mesh = new THREE.Mesh(
             new THREE.SphereGeometry(2, 12, 12),
-            new THREE.MeshBasicMaterial({ color: col }),
+            material,
         );
         mesh.position.copy(pos);
-        mesh.userData = { sourceId: source.id };
+        mesh.userData = { sourceId: source.id, material };
         scene.add(mesh);
         anchorMeshes.set(source.id, mesh);
 
-        // Small spike pointing radially outward
+        // Small spike pointing radially outward (also with glow)
+        const spikeMaterial = new THREE.MeshStandardMaterial({
+            color: col,
+            emissive: col,
+            emissiveIntensity: 0,
+            metalness: 0,
+            roughness: 1,
+        });
         const spike = new THREE.Mesh(
             new THREE.CylinderGeometry(0.3, 0, 6, 6),
-            new THREE.MeshBasicMaterial({ color: col }),
+            spikeMaterial,
         );
         const outward = pos.clone().normalize();
         spike.position.copy(outward.clone().multiplyScalar(GLOBE_RADIUS + 3));
         spike.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), outward);
+        spike.userData = { sourceId: source.id, material: spikeMaterial, isSpike: true };
         scene.add(spike);
     }
 }
@@ -225,6 +380,9 @@ function _startRenderLoop() {
     function loop() {
         animFrameId = requestAnimationFrame(loop);
         controls.update();
+
+        // Update pulse animations
+        _updatePulseAnimations();
 
         // Show anchors only on the near side of the globe and only if source has data
         for (const mesh of anchorMeshes.values()) {
