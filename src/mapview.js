@@ -41,6 +41,10 @@ const sourcesWithData = new Set(); // sourceIds that have returned data
 const pulseStates = new Map(); // sourceId -> { isSearching, ringQueue: [], nextRingTime: 0 }
 const ringMeshes = []; // all active ring meshes for cleanup/animation
 
+// Raycasting for interactions
+let raycaster, pointer;
+let hoveredAnchorId = null;
+
 // ─── Coordinate helpers ───────────────────────────────────────────────────────
 
 // Mirrors Three.js SphereGeometry vertex formula exactly:
@@ -119,8 +123,31 @@ export function initMap(cont) {
     _createSourceAnchors();
 
     // Raycasting
-    const raycaster = new THREE.Raycaster();
-    const pointer   = new THREE.Vector2();
+    raycaster = new THREE.Raycaster();
+    pointer = new THREE.Vector2();
+
+    renderer.domElement.addEventListener("mousemove", (e) => {
+        const rect = renderer.domElement.getBoundingClientRect();
+        pointer.x  =  ((e.clientX - rect.left) / rect.width)  * 2 - 1;
+        pointer.y  = -((e.clientY - rect.top)  / rect.height) * 2 + 1;
+
+        raycaster.setFromCamera(pointer, camera);
+        const hits = raycaster.intersectObjects([...anchorMeshes.values()], false);
+
+        if (hits.length > 0 && !hits[0].object.userData.isSpike) {
+            const anchorId = hits[0].object.userData.sourceId;
+            if (hoveredAnchorId !== anchorId) {
+                hoveredAnchorId = anchorId;
+                renderer.domElement.style.cursor = "pointer";
+            }
+        } else {
+            if (hoveredAnchorId !== null) {
+                hoveredAnchorId = null;
+                renderer.domElement.style.cursor = "default";
+            }
+        }
+    });
+
     renderer.domElement.addEventListener("click", (e) => {
         controls.autoRotate = false;
 
@@ -313,7 +340,7 @@ function _createSourceAnchors() {
             roughness: 1,
         });
         const mesh = new THREE.Mesh(
-            new THREE.SphereGeometry(4, 12, 12),
+            new THREE.CylinderGeometry(32, 32, 8, 32),
             material,
         );
         mesh.position.copy(pos);
