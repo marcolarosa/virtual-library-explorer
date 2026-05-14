@@ -6,9 +6,9 @@ import { locSearchFn } from "./sources/americas/library-of-congress.js";
 
 // ─── Region colors ────────────────────────────────────────────────────────────
 export const REGION_COLORS = {
-    "Americas": "#e74c3c",
-    "Europe": "#3498db",
-    "Oceania": "#2ecc71",
+    Americas: "#e74c3c",
+    Europe: "#3498db",
+    Oceania: "#2ecc71",
 };
 
 export function getRegionColor(region) {
@@ -24,7 +24,7 @@ export const SOURCES = [
         country: "US",
         region: "Americas",
         searchFn: locSearchFn,
-        enabled: false,
+        enabled: true,
         lat: 38.9,
         lng: -77.0,
     },
@@ -35,7 +35,7 @@ export const SOURCES = [
         country: "AU",
         region: "Oceania",
         searchFn: troveSearchFn,
-        enabled: false,
+        enabled: true,
         lat: -35.3,
         lng: 149.1,
     },
@@ -68,7 +68,7 @@ export const SOURCES = [
         country: "US",
         region: "Americas",
         searchFn: dplaSearchFn,
-        enabled: false,
+        enabled: true,
         lat: 42.4,
         lng: -71.1,
     },

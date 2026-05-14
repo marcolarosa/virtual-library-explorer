@@ -369,25 +369,6 @@ function _renderSourceList(sourceId) {
             showDetailPanel(node, true);
         });
 
-        if (node.url && node.url !== "#") {
-            const actionRow = document.createElement("div");
-            actionRow.className = "flex gap-1.5 mt-1.5";
-            const btnCls = "py-0.5 px-2 text-[11px] rounded-[4px] bg-surface2 border border-border text-text cursor-pointer hover:bg-border no-underline";
-            const openLink = document.createElement("a");
-            openLink.href = node.url;
-            openLink.target = "_blank";
-            openLink.rel = "noopener";
-            openLink.className = btnCls;
-            openLink.textContent = "Open ↗";
-            const iframeBtn = document.createElement("button");
-            iframeBtn.className = btnCls;
-            iframeBtn.textContent = "View in panel";
-            iframeBtn.addEventListener("click", () => showIframePanel(node.url));
-            actionRow.appendChild(openLink);
-            actionRow.appendChild(iframeBtn);
-            item.appendChild(actionRow);
-        }
-
         content.appendChild(item);
     }
 }
