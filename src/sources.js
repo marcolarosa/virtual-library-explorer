@@ -12,6 +12,10 @@ import { bneSearchFn } from "./sources/europe/biblioteca-nacional-espana.js";
 import { dnbSearchFn } from "./sources/europe/deutsche-nationalbibliothek.js";
 import { nlnzSearchFn } from "./sources/oceania/national-library-new-zealand.js";
 import { nlaSearchFn } from "./sources/oceania/national-library-australia.js";
+import { slnswSearchFn } from "./sources/oceania/state-library-new-south-wales.js";
+import { slqSearchFn } from "./sources/oceania/state-library-queensland.js";
+import { slsaSearchFn } from "./sources/oceania/state-library-south-australia.js";
+import { slwaSearchFn } from "./sources/oceania/state-library-western-australia.js";
 import { sanLibrarySearchFn } from "./sources/africa/south-african-national-library.js";
 import { bnsSearchFn } from "./sources/africa/bibliothèque-nationale-senegal.js";
 import { knlSearchFn } from "./sources/africa/kenya-national-library.js";
@@ -59,6 +63,17 @@ export const SOURCES = [
         enabled: true,
         lat: -35.3,
         lng: 149.1,
+    },
+    {
+        id: "slnsw",
+        label: "State Library of New South Wales",
+        shortLabel: "SLNSW",
+        country: "AU",
+        region: "Oceania",
+        searchFn: slnswSearchFn,
+        enabled: true,
+        lat: -33.866867,
+        lng: 151.212845,
     },
     {
         id: "europeana",
@@ -200,8 +215,41 @@ export const SOURCES = [
         region: "Oceania",
         searchFn: nlaSearchFn,
         enabled: true,
-        lat: -35.3,
-        lng: 149.1,
+        lat: -35.296623,
+        lng: 149.129822,
+    },
+    {
+        id: "slq",
+        label: "State Library of Queensland",
+        shortLabel: "SLQ",
+        country: "AU",
+        region: "Oceania",
+        searchFn: slqSearchFn,
+        enabled: true,
+        lat: -27.4712,
+        lng: 153.0181,
+    },
+    {
+        id: "slsa",
+        label: "State Library of South Australia",
+        shortLabel: "SLSA",
+        country: "AU",
+        region: "Oceania",
+        searchFn: slsaSearchFn,
+        enabled: true,
+        lat: -34.9209,
+        lng: 138.6022,
+    },
+    {
+        id: "slwa",
+        label: "State Library of Western Australia",
+        shortLabel: "SLWA",
+        country: "AU",
+        region: "Oceania",
+        searchFn: slwaSearchFn,
+        enabled: true,
+        lat: -31.9490,
+        lng: 115.8605,
     },
     {
         id: "san",
