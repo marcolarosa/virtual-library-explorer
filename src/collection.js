@@ -6,14 +6,9 @@ import { SOURCES, getSource } from './sources.js'
 export function pinNode(node) {
   if (state.collection.has(node.id)) return
   state.collection.set(node.id, {
+    ...node,
     annotation: node.annotation || '',
     pinnedAt: new Date().toISOString(),
-    result: node.result || null,
-    label: node.label,
-    sourceId: node.sourceId,
-    color: node.color,
-    rawSubjects: node.rawSubjects || [],
-    rawCreators: node.rawCreators || [],
   })
   node.pinned = true
   saveCollectionToStorage()

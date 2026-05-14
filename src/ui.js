@@ -13,6 +13,7 @@ const $ = (id) => document.getElementById(id);
 let selectedNode = null;
 let lastSourceId = null; // tracks source for back-button navigation
 let panelMode = null; // 'source' | 'node'
+let iframeUrl = null; // current URL displayed in iframe panel
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 
@@ -22,8 +23,34 @@ export function initUI() {
     setupSourcePanel();
     setupCollectionDrawer();
     setupDetailPanel();
+    setupIframePanel();
     setupImportExport();
     setupBusListeners();
+}
+
+// ─── iframe panel ────────────────────────────────────────────────────────────
+
+function showIframePanel(url) {
+  if (!url || url === "#") return;
+  closeDrawer("collection-drawer");
+  iframeUrl = url;
+  const panel = $("iframe-panel");
+  const title = $("iframe-title");
+  const viewer = $("iframe-viewer");
+
+  title.textContent = new URL(url).hostname;
+  viewer.src = url;
+  panel.classList.remove("-translate-x-full");
+}
+
+function hideIframePanel() {
+  $("iframe-panel").classList.add("-translate-x-full");
+  iframeUrl = null;
+  $("iframe-viewer").src = "";
+}
+
+function setupIframePanel() {
+  $("iframe-close").addEventListener("click", hideIframePanel);
 }
 
 // ─── Search ───────────────────────────────────────────────────────────────────
@@ -153,7 +180,12 @@ export function renderSourcePanel() {
 // ─── Collection drawer ────────────────────────────────────────────────────────
 
 function setupCollectionDrawer() {
-    $("collection-toggle").addEventListener("click", () => toggleDrawer("collection-drawer"));
+    const openCollection = () => {
+        hideIframePanel();
+        toggleDrawer("collection-drawer");
+    };
+    $("collection-toggle").addEventListener("click", openCollection);
+    $("collection-view-btn").addEventListener("click", openCollection);
     $("collection-close").addEventListener("click", () => closeDrawer("collection-drawer"));
     $("export-btn-2").addEventListener("click", exportCollection);
 }
@@ -182,12 +214,36 @@ export function renderCollectionDrawer() {
 
         for (const [nodeId, entry] of items) {
             const item = document.createElement("div");
-            item.className = "px-3.5 py-2 border-b border-border hover:bg-surface2";
+            item.className = "px-3.5 py-3 border-b border-border hover:bg-surface2";
+
+            const metaRows = [
+                entry.type       ? ["Type",        entry.type] : null,
+                entry.description ? ["Description", entry.description] : null,
+                (entry.rawCreators?.length) ? ["Creators", entry.rawCreators.join(", ")] : null,
+                (entry.rawSubjects?.length) ? ["Subjects", entry.rawSubjects.join(", ")] : null,
+                entry.url && entry.url !== "#" ? ["URL", `<a href="${entry.url}" target="_blank" rel="noopener" class="text-accent no-underline hover:underline">View original ↗</a>`] : null,
+            ].filter(Boolean);
+
+            const metaTable = metaRows.length ? `
+        <table class="w-full text-[11px] mb-2 border-collapse">
+          ${metaRows.map(([label, value]) => `
+          <tr class="border-b border-border">
+            <td class="py-1 pr-3 text-dim font-mono uppercase tracking-[0.5px] whitespace-nowrap align-top w-[80px]">${label}</td>
+            <td class="py-1 text-text leading-[1.5] break-words">${value}</td>
+          </tr>`).join("")}
+        </table>` : "";
+
             item.innerHTML = `
-        <div class="text-xs text-bright mb-1">${truncate(entry.label, 50)}</div>
-        <textarea class="w-full bg-bg border border-border text-text rounded-[4px] px-1.5 py-1 text-[11px] font-sans resize-y mb-1" placeholder="Add note…" rows="2">${entry.annotation || ""}</textarea>
+        ${entry.thumbnailUrl ? `<img src="${entry.thumbnailUrl}" class="w-full max-h-[120px] object-cover rounded-[4px] mb-2" onerror="this.style.display='none'">` : ""}
+        <div class="flex gap-1.5 flex-wrap mb-1.5">
+          ${entry.type ? `<span class="text-[10px] py-0.5 px-1.5 rounded-[10px] font-mono uppercase tracking-[0.5px] bg-surface2 text-dim">${entry.type}</span>` : ""}
+          <span class="text-[10px] py-0.5 px-1.5 rounded-[10px] font-mono uppercase tracking-[0.5px] text-black font-semibold" style="background:${src ? getRegionColor(src.region) : "#888"}">${src?.label || entry.sourceId}</span>
+        </div>
+        <div class="text-xs text-bright font-medium leading-[1.3] mb-1">${entry.label || "Untitled"}</div>
+        ${entry.date ? `<div class="text-[10px] text-dim font-mono mb-2">${entry.date}</div>` : ""}
+        ${metaTable}
+        <textarea class="w-full bg-bg border border-border text-text rounded-[4px] px-1.5 py-1 text-[11px] font-sans resize-y mb-1.5" placeholder="Add note…" rows="2">${entry.annotation || ""}</textarea>
         <div class="flex gap-1.5">
-          <button class="py-0.5 px-2 text-[11px] rounded-[4px] bg-surface2 border border-border text-text cursor-pointer hover:bg-border" data-action="focus" data-id="${nodeId}">Find</button>
           <button class="py-0.5 px-2 text-[11px] rounded-[4px] bg-surface2 border border-border text-[#ff6b6b] cursor-pointer hover:bg-[rgba(255,107,107,0.15)]" data-action="unpin" data-id="${nodeId}">Remove</button>
         </div>
       `;
@@ -199,9 +255,6 @@ export function renderCollectionDrawer() {
             });
             item.querySelector("textarea").addEventListener("change", (e) => {
                 setAnnotation(nodeId, e.target.value);
-            });
-            item.querySelector('[data-action="focus"]').addEventListener("click", () => {
-                // map view focus not yet implemented
             });
             group.appendChild(item);
         }
@@ -259,8 +312,11 @@ function _renderSourceList(sourceId) {
     for (const node of nodes) {
         const item = document.createElement("div");
         item.className =
-            "flex items-start gap-2 py-2 px-1 border-b border-border cursor-pointer rounded-[4px] hover:bg-surface2";
-        item.innerHTML = `
+            "flex flex-col py-2 px-1 border-b border-border rounded-[4px] hover:bg-surface2";
+
+        const resultBody = document.createElement("div");
+        resultBody.className = "flex items-start gap-2 cursor-pointer";
+        resultBody.innerHTML = `
       ${node.thumbnailUrl ? `<img src="${node.thumbnailUrl}" class="w-12 h-10 object-cover rounded-[3px] shrink-0 mt-0.5" onerror="this.style.display='none'">` : ""}
       <div class="flex-1 min-w-0">
         <div class="text-xs text-bright font-medium leading-[1.3] mb-0.5 overflow-hidden" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${node.title || "Untitled"}</div>
@@ -268,7 +324,33 @@ function _renderSourceList(sourceId) {
         <div class="text-[10px] text-dim font-mono uppercase mt-0.5">${node.type || ""}</div>
       </div>
     `;
-        item.addEventListener("click", () => showDetailPanel(node, true));
+
+        item.appendChild(resultBody);
+
+        // Click result body to open detail panel and iframe
+        resultBody.addEventListener("click", () => {
+            showDetailPanel(node, true);
+        });
+
+        if (node.url && node.url !== "#") {
+            const actionRow = document.createElement("div");
+            actionRow.className = "flex gap-1.5 mt-1.5";
+            const btnCls = "py-0.5 px-2 text-[11px] rounded-[4px] bg-surface2 border border-border text-text cursor-pointer hover:bg-border no-underline";
+            const openLink = document.createElement("a");
+            openLink.href = node.url;
+            openLink.target = "_blank";
+            openLink.rel = "noopener";
+            openLink.className = btnCls;
+            openLink.textContent = "Open ↗";
+            const iframeBtn = document.createElement("button");
+            iframeBtn.className = btnCls;
+            iframeBtn.textContent = "View in panel";
+            iframeBtn.addEventListener("click", () => showIframePanel(node.url));
+            actionRow.appendChild(openLink);
+            actionRow.appendChild(iframeBtn);
+            item.appendChild(actionRow);
+        }
+
         content.appendChild(item);
     }
 }
@@ -310,7 +392,6 @@ function renderDetailPanel(node) {
         state.nodes.size < state.nodeLimit;
 
     const src = SOURCES.find((s) => s.id === node.sourceId);
-    const result = node.result || {};
 
     const tagCls =
         "text-[11px] py-0.5 px-2 rounded-[10px] bg-surface2 border border-border text-text cursor-pointer transition-colors duration-200 hover:bg-accent hover:text-white hover:border-accent";
@@ -329,12 +410,12 @@ function renderDetailPanel(node) {
     ${isPinned ? '<span class="text-[10px] py-0.5 px-2 rounded-[10px] font-mono uppercase tracking-[0.5px] bg-[rgba(255,215,0,0.2)] text-gold">pinned</span>' : ""}
   </div>
   <h2 class="text-[15px] font-semibold text-bright mb-1.5 leading-[1.4]">${node.label || "Untitled"}</h2>
-  ${result.date ? `<div class="font-mono text-[11px] text-dim mb-2">${result.date}</div>` : ""}
-  ${result.thumbnailUrl ? `<img class="w-full max-h-[160px] object-cover rounded-[4px] mb-2.5" src="${result.thumbnailUrl}" alt="">` : ""}
-  ${result.description ? `<p class="text-xs text-text leading-[1.6] mb-2.5">${result.description}</p>` : ""}
+  ${node.date ? `<div class="font-mono text-[11px] text-dim mb-2">${node.date}</div>` : ""}
+  ${node.thumbnailUrl ? `<img class="w-full max-h-[160px] object-cover rounded-[4px] mb-2.5" src="${node.thumbnailUrl}" alt="">` : ""}
+  ${node.description ? `<p class="text-xs text-text leading-[1.6] mb-2.5">${node.description}</p>` : ""}
   ${creatorTags ? `<div class="mb-2"><span class="text-[10px] uppercase tracking-[1px] text-dim block mb-1">Creators</span><div class="flex flex-wrap gap-1">${creatorTags}</div></div>` : ""}
   ${subjectTags ? `<div class="mb-2"><span class="text-[10px] uppercase tracking-[1px] text-dim block mb-1">Subjects</span><div class="flex flex-wrap gap-1">${subjectTags}</div></div>` : ""}
-  ${result.url && result.url !== "#" ? `<a class="inline-block text-xs text-accent no-underline mb-3 hover:underline" href="${result.url}" target="_blank" rel="noopener">View original record ↗</a>` : ""}
+  ${node.url && node.url !== "#" ? `<div class="flex gap-2 items-center mb-3"><a class="text-xs text-accent no-underline hover:underline" href="${node.url}" target="_blank" rel="noopener">View original record ↗</a><button id="detail-iframe-btn" class="py-0.5 px-2 text-[11px] rounded-[4px] bg-surface2 border border-border text-text cursor-pointer hover:bg-border">View in panel</button></div>` : ""}
   <div class="flex flex-col gap-1.5 mt-3">
     <button id="pin-btn" class="py-2 px-3 rounded-[6px] bg-surface2 border cursor-pointer text-xs transition-colors duration-200 hover:bg-border ${isPinned ? "text-gold border-gold" : "text-text border-border"}">${isPinned ? "★ Unpin" : "☆ Pin to collection"}</button>
     ${canExpand ? '<button id="expand-btn" class="py-2 px-3 rounded-[6px] bg-surface2 border border-border text-text cursor-pointer text-xs transition-colors duration-200 hover:bg-border">Explore from here</button>' : ""}
@@ -352,6 +433,11 @@ function renderDetailPanel(node) {
 `;
 
     // Wire up actions
+    const iframeBtnDetail = $("detail-iframe-btn");
+    if (iframeBtnDetail) {
+        iframeBtnDetail.addEventListener("click", () => showIframePanel(node.url));
+    }
+
     $("pin-btn").addEventListener("click", () => {
         if (isPinned) unpinNode(node.id);
         else pinNode(node);
@@ -426,23 +512,22 @@ export function updateNodeCapWarning() {
 // ─── Import / Export buttons ──────────────────────────────────────────────────
 
 function setupImportExport() {
-    $("export-btn").addEventListener("click", exportCollection);
-    $("import-btn").addEventListener("click", () => $("import-file").click());
-    $("import-file").addEventListener("change", (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            try {
-                const data = JSON.parse(ev.target.result);
-                importGraph(data);
-            } catch (err) {
-                alert("Failed to load graph: " + err.message);
-            }
-        };
-        reader.readAsText(file);
-        e.target.value = ""; // reset so same file can be re-imported
-    });
+  // Keep import functionality in case needed via API, but remove UI buttons
+  $("import-file").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        importGraph(data);
+      } catch (err) {
+        alert("Failed to load graph: " + err.message);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  });
 }
 
 // ─── Drawer helpers ───────────────────────────────────────────────────────────
