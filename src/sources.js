@@ -2,6 +2,7 @@ import { slvSearchFn } from "./sources/oceania/state-library-of-victoria.js";
 import { troveSearchFn } from "./sources/oceania/trove.js";
 import { europeanaSearchFn } from "./sources/europe/europeana.js";
 import { dplaSearchFn } from "./sources/americas/digital-public-library-of-america.js";
+import { locSearchFn } from "./sources/americas/library-of-congress.js";
 
 import {
     fetchJsonWithCorsFallback,
@@ -43,28 +44,28 @@ export async function search({ testing, sourceId, url, headers, query, total, it
 }
 
 // ─── Library of Congress ─────────────────────────────────────────────────────
-export async function locSearchFn({ query, limit = 10, testing = false }) {
-    return search({
-        testing,
-        sourceId: "loc",
-        url: `https://www.loc.gov/search/?q=${query}&fo=json`,
-        query,
-        items: (data) => data.results || [],
-        mapDict: {
-            id: (item) => `loc::${encodeURIComponent(item.url || item.id || item.title)}`,
-            title: (item) => (Array.isArray(item.title) ? item.title[0] : item.title),
-            type: () => "work",
-            description: (item) =>
-                Array.isArray(item.description) ? item.description[0] : item.description || "",
-            date: ["date", ""],
-            url: ["url", ""],
-            thumbnailUrl: (item) => (item.image_url && item.image_url[0]) || "",
-            sourceId: () => "loc",
-            subjects: ["subject", []],
-            creators: ["contributor", []],
-        },
-    });
-}
+// export async function locSearchFn({ query, limit = 10, testing = false }) {
+//     return search({
+//         testing,
+//         sourceId: "loc",
+//         url: `https://www.loc.gov/search/?q=${query}&fo=json`,
+//         query,
+//         items: (data) => data.results || [],
+//         mapDict: {
+//             id: (item) => `loc::${encodeURIComponent(item.url || item.id || item.title)}`,
+//             title: (item) => (Array.isArray(item.title) ? item.title[0] : item.title),
+//             type: () => "work",
+//             description: (item) =>
+//                 Array.isArray(item.description) ? item.description[0] : item.description || "",
+//             date: ["date", ""],
+//             url: ["url", ""],
+//             thumbnailUrl: (item) => (item.image_url && item.image_url[0]) || "",
+//             sourceId: () => "loc",
+//             subjects: ["subject", []],
+//             creators: ["contributor", []],
+//         },
+//     });
+// }
 
 // ─── Trove (NLA) ─────────────────────────────────────────────────────────────
 // export async function troveSearchFn({ query, limit = 5, testing = false }) {
@@ -248,7 +249,7 @@ export const SOURCES = [
         region: "Americas",
         color: "#1abc9c",
         searchFn: locSearchFn,
-        enabled: true,
+        enabled: false,
         lat: 38.9,
         lng: -77.0,
     },
@@ -260,7 +261,7 @@ export const SOURCES = [
         region: "Oceania",
         color: "#2ecc71",
         searchFn: troveSearchFn,
-        enabled: true,
+        enabled: false,
         lat: -35.3,
         lng: 149.1,
     },
@@ -296,7 +297,6 @@ export const SOURCES = [
         color: "#e74c3c",
         searchFn: dplaSearchFn,
         enabled: true,
-        requiresKey: false,
         lat: 42.4,
         lng: -71.1,
     },
@@ -309,7 +309,6 @@ export const SOURCES = [
         color: "#e74c3c",
         searchFn: slvSearchFn,
         enabled: true,
-        requiresKey: false,
         lat: -37.8,
         lng: 144.9,
     },

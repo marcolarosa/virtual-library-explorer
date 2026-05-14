@@ -81,12 +81,12 @@ async function runSourceQuery(query, source, queryNodeId) {
   emit('source:status', { sourceId: source.id, status: 'querying' })
 
   try {
-    const results = await source.searchFn({ query })
+    const { docs, total } = await source.searchFn({ query })
     const latency = Date.now() - t0
 
     const queryDepth = state.nodes.get(queryNodeId)?.depth ?? 0
 
-    for (const result of results) {
+    for (const result of docs) {
       if (state.nodes.size >= state.nodeLimit) {
         emit('node-cap:reached')
         break
@@ -110,9 +110,9 @@ async function runSourceQuery(query, source, queryNodeId) {
     emit('graph:update', { sourceId: source.id })
 
     state.sourceStatuses.set(source.id, {
-      status: 'done', count: results.length, latency, proxyUsed: false,
+      status: 'done', count: total, latency, proxyUsed: false,
     })
-    emit('source:status', { sourceId: source.id, status: 'done', count: results.length, latency })
+    emit('source:status', { sourceId: source.id, status: 'done', count: total, latency })
   } catch (err) {
     const latency = Date.now() - t0
     console.warn(`[${source.id}] error:`, err.message)

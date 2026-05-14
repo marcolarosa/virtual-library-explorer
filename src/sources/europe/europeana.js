@@ -1,4 +1,4 @@
-import { cachedFetch, fetchHtmlAndExtract } from "../../utils";
+import { cachedFetch, fetchHtmlAndExtract } from "../../utils.js";
 
 export async function europeanaSearchFn({ query, testing = false }) {
     const EUROPEANA_SCRAPE_MAPPING = {

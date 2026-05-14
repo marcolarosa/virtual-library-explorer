@@ -1,4 +1,4 @@
-import { cachedFetch, fetchNextPageData } from "../../utils";
+import { cachedFetch, fetchNextPageData } from "../../utils.js";
 
 export async function dplaSearchFn({ query, testing = false }) {
     const DPLA_SCRAPE_MAPPING = {

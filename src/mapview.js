@@ -23,6 +23,7 @@ let animFrameId = null;
 let graphUpdateHandler = null;
 
 const anchorMeshes = new Map(); // sourceId -> THREE.Mesh
+const sourcesWithData = new Set(); // sourceIds that have returned data
 
 // ─── Coordinate helpers ───────────────────────────────────────────────────────
 
@@ -123,6 +124,13 @@ export function initMap(cont) {
     // Bus
     graphUpdateHandler = () => {};
     on("graph:update", graphUpdateHandler);
+    on("source:status", (event) => {
+        if (event.status === "done" && event.count > 0) {
+            sourcesWithData.add(event.sourceId);
+        } else if (event.status === "error") {
+            sourcesWithData.delete(event.sourceId);
+        }
+    });
 
     window.addEventListener("resize", _onResize);
     _startRenderLoop();
@@ -184,9 +192,11 @@ function _startRenderLoop() {
         animFrameId = requestAnimationFrame(loop);
         controls.update();
 
-        // Hide anchors on the far side of the globe
+        // Show anchors only on the near side of the globe and only if source has data
         for (const mesh of anchorMeshes.values()) {
-            mesh.visible = mesh.position.dot(camera.position) > 0;
+            const sourceId = mesh.userData.sourceId;
+            const facingCamera = mesh.position.dot(camera.position) > 0;
+            mesh.visible = facingCamera && sourcesWithData.has(sourceId);
         }
 
         renderer.render(scene, camera);
