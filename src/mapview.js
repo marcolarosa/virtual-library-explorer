@@ -340,7 +340,7 @@ function _createSourceAnchors() {
             roughness: 1,
         });
         const mesh = new THREE.Mesh(
-            new THREE.CylinderGeometry(32, 32, 8, 32),
+            new THREE.SphereGeometry(4, 12, 12),
             material,
         );
         mesh.position.copy(pos);

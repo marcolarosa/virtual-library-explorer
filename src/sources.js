@@ -33,7 +33,7 @@ export const REGION_COLORS = {
     Europe: "#3498db",
     Oceania: "#2ecc71",
     Africa: "#f39c12",
-    Asia: "#9b59b6",
+    Asia: "#C980FF",
 };
 
 export function getRegionColor(region) {
@@ -248,7 +248,7 @@ export const SOURCES = [
         region: "Oceania",
         searchFn: slwaSearchFn,
         enabled: true,
-        lat: -31.9490,
+        lat: -31.949,
         lng: 115.8605,
     },
     {
