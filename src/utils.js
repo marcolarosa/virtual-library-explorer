@@ -1,3 +1,4 @@
+/** Debounces a function, delaying execution until after `ms` milliseconds of inactivity. */
 export function debounce(fn, ms) {
     let timer;
     return (...args) => {
@@ -6,21 +7,24 @@ export function debounce(fn, ms) {
     };
 }
 
+/** Generates a stable node ID for a query string. */
 export function queryNodeId(query) {
     return `query::${query.toLowerCase().trim()}`;
 }
 
-export function sourceAnchorId(sourceId) {
-    return `source::${sourceId}`;
-}
-
+/** Normalizes a string by converting to lowercase and trimming whitespace. */
 export function normalizeStr(s) {
     return (s || "").toLowerCase().trim();
 }
 
+/** Truncates a string to `n` characters (default 60), appending "…" if truncated. */
 export function truncate(s, n = 60) {
     if (!s) return "";
     return s.length > n ? s.slice(0, n) + "…" : s;
+}
+
+function resolvePath(obj, path) {
+    return path.match(/[^.[\]]+/g)?.reduce((cur, k) => cur?.[k], obj);
 }
 
 const PROXIES = [
@@ -30,6 +34,7 @@ const PROXIES = [
 
 const _cache = new Map();
 
+/** Caches the result of an async operation. Subsequent calls with the same key return the cached value. */
 export async function cachedFetch(key, fetchFn) {
     if (_cache.has(key)) return _cache.get(key);
     const result = await fetchFn();
@@ -37,11 +42,7 @@ export async function cachedFetch(key, fetchFn) {
     return result;
 }
 
-export function generateEdgeId(type, nodeIdA, nodeIdB, label = "") {
-    const sorted = [nodeIdA, nodeIdB].sort().join("::");
-    return `${type}::${sorted}${label ? "::" + normalizeStr(label) : ""}`;
-}
-
+/** Extracts a value from a nested object using dot/bracket notation path. */
 function getPathValue(obj, path) {
     return path
         .split(/[\.\[\]]/)
@@ -49,6 +50,35 @@ function getPathValue(obj, path) {
         .reduce((o, key) => o?.[key], obj);
 }
 
+// ─── Generic search helper ───────────────────────────────────────────────────
+// testing: bool => true if running in testing
+// sourceId: string => a descriptive label for the source
+// url:     string => the API endpoint URL
+// headers: object => optional HTTP headers for the request
+// query:   string => the search query string
+// total:   (data) => number => optional; extracts total result count from response
+// items:   (data) => array  — extracts the results array from the response
+// mapDict: { key: "dot.path[0]" | ["dot.path[0]", default] | (item) => value }
+export async function search({ testing, sourceId, url, headers, query, total, items, mapDict }) {
+    const key = `${sourceId}::${query}`;
+    const mapFn = (item) =>
+        Object.fromEntries(
+            Object.entries(mapDict).map(([k, v]) => {
+                if (typeof v === "function") return [k, v(item)];
+                if (Array.isArray(v)) return [k, resolvePath(item, v[0]) ?? v[1]];
+                return [k, resolvePath(item, v)];
+            }),
+        );
+    return cachedFetch(key, async () => {
+        const { data } = await fetchJsonWithCorsFallback(testing, url, headers);
+        const docs = (items(data) || []).map(mapFn);
+        const result = { docs };
+        if (total) result.total = total(data);
+        return result;
+    });
+}
+
+/** Extracts items from Next.js page props using a mapping configuration. */
 function extractFromPageProps(pageProps, mapping) {
     if (!mapping.dataPath) return [];
 
@@ -64,8 +94,8 @@ function extractFromPageProps(pageProps, mapping) {
     });
 }
 
+/** Fetches JSON via CORS proxy if needed. In testing mode, tries direct fetch. Returns {data, proxyUsed}. */
 export async function fetchJsonWithCorsFallback(testing, url, headers, options = {}) {
-    // Try direct first
     let lastErr;
     if (testing) {
         const resp = await fetch(url, { headers, signal: AbortSignal.timeout(12000) });
@@ -87,6 +117,7 @@ export async function fetchJsonWithCorsFallback(testing, url, headers, options =
     }
 }
 
+/** Fetches HTML and extracts data using CSS selectors. Returns {docs, total}. */
 export async function fetchHtmlAndExtract(testing, url, mapping) {
     const headers = {
         "User-Agent":
@@ -145,6 +176,7 @@ export async function fetchHtmlAndExtract(testing, url, mapping) {
     return { docs, total };
 }
 
+/** Fetches and parses Next.js page data, extracting items using the provided mapping. Returns {docs, total, nextData}. */
 export async function fetchNextPageData(testing, url, mapping) {
     const headers = {
         "User-Agent":

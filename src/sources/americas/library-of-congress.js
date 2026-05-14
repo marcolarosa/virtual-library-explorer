@@ -1,4 +1,4 @@
-import { search } from "../../sources.js";
+import { search } from "../../utils.js";
 
 export async function locSearchFn({ query, limit = 10, testing = false }) {
     return search({

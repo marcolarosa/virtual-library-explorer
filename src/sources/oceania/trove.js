@@ -1,4 +1,4 @@
-import { search } from "../../sources.js";
+import { search } from "../../utils.js";
 
 export async function troveSearchFn({ query, limit = 5, testing = false }) {
     const apiKey = "3a0a200c2feaa87ccbaf2933e88eba56";

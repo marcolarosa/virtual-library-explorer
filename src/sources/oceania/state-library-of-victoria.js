@@ -1,4 +1,4 @@
-import { search } from "../../sources.js";
+import { search } from "../../utils.js";
 
 export async function slvSearchFn({ query, limit = 10, testing = false }) {
     const url = `https://find.slv.vic.gov.au/primaws/rest/pub/pnxs?acTriggered=false&blendFacetsSeparately=false&citationTrailFilterByAvailability=true&disableCache=false&getMore=0&inst=61SLV_INST&isCDSearch=false&lang=en&limit=${limit}&newspapersActive=true&newspapersSearch=false&offset=0&otbRanking=false&pcAvailability=true&qExclude=&qInclude=&rapido=false&refEntryActive=false&rtaLinks=true&scope=slv_local&searchInFulltextUserSelection=true&skipDelivery=Y&sort=rank&tab=searchProfile&vid=61SLV_INST%3ASLV&q=any,contains,${encodeURIComponent(query)}`;
@@ -15,7 +15,8 @@ export async function slvSearchFn({ query, limit = 10, testing = false }) {
             type: "pnx.display.type[0]",
             description: ["pnx.display.description[0]", ""],
             date: ["pnx.display.lds19[0]", ""],
-            url: ["@id", ""],
+            url: (doc) =>
+                `https://find.slv.vic.gov.au/discovery/fulldisplay?docid=${doc.pnx.control.recordid}&context=L&vid=61SLV_INST:SLV&lang=en`,
             thumbnailUrl: ["object", ""],
             sourceId: () => "slv",
             subjects: (doc) =>
