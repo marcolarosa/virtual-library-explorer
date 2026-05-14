@@ -1,3 +1,8 @@
+import { slvSearchFn } from "./sources/oceania/state-library-of-victoria.js";
+import { troveSearchFn } from "./sources/oceania/trove.js";
+import { europeanaSearchFn } from "./sources/europe/europeana.js";
+import { dplaSearchFn } from "./sources/americas/digital-public-library-of-america.js";
+
 import {
     fetchJsonWithCorsFallback,
     cachedFetch,
@@ -10,25 +15,30 @@ function resolvePath(obj, path) {
 }
 
 // ─── Generic search helper ───────────────────────────────────────────────────
-// url:     string | (query, limit) => string
+// testing: bool => true if running in testing
+// sourceId: string => a descriptive label for the source
+// url:     string => the API endpoint URL
+// headers: object => optional HTTP headers for the request
+// query:   string => the search query string
+// total:   (data) => number => optional; extracts total result count from response
 // items:   (data) => array  — extracts the results array from the response
 // mapDict: { key: "dot.path[0]" | ["dot.path[0]", default] | (item) => value }
-// map:     (item) => Node   — imperative alternative to mapDict
-export async function search({ testing, sourceId, url, headers, query, items, map, mapDict }) {
+export async function search({ testing, sourceId, url, headers, query, total, items, mapDict }) {
     const key = `${sourceId}::${query}`;
-    const mapFn = mapDict
-        ? (item) =>
-              Object.fromEntries(
-                  Object.entries(mapDict).map(([k, v]) => {
-                      if (typeof v === "function") return [k, v(item)];
-                      if (Array.isArray(v)) return [k, resolvePath(item, v[0]) ?? v[1]];
-                      return [k, resolvePath(item, v)];
-                  }),
-              )
-        : map;
+    const mapFn = (item) =>
+        Object.fromEntries(
+            Object.entries(mapDict).map(([k, v]) => {
+                if (typeof v === "function") return [k, v(item)];
+                if (Array.isArray(v)) return [k, resolvePath(item, v[0]) ?? v[1]];
+                return [k, resolvePath(item, v)];
+            }),
+        );
     return cachedFetch(key, async () => {
         const { data } = await fetchJsonWithCorsFallback(testing, url, headers);
-        return (items(data) || []).map(mapFn);
+        const docs = (items(data) || []).map(mapFn);
+        const result = { docs };
+        if (total) result.total = total(data);
+        return result;
     });
 }
 
@@ -57,90 +67,90 @@ export async function locSearchFn({ query, limit = 10, testing = false }) {
 }
 
 // ─── Trove (NLA) ─────────────────────────────────────────────────────────────
-export async function troveSearchFn({ query, limit = 5, testing = false }) {
-    const apiKey = "3a0a200c2feaa87ccbaf2933e88eba56";
-    const endpoints = [
-        // newspapers and gazettes
-        `https://trove.nla.gov.au/api/search/137?terms=%28%20${query}%20%29&pageSize=${limit}`,
+// export async function troveSearchFn({ query, limit = 5, testing = false }) {
+//     const apiKey = "3a0a200c2feaa87ccbaf2933e88eba56";
+//     const endpoints = [
+//         // newspapers and gazettes
+//         `https://trove.nla.gov.au/api/search/137?terms=%28%20${query}%20%29&pageSize=${limit}`,
 
-        // images, maps and artefacts
-        `https://trove.nla.gov.au/api/search/21?terms=%28%20${query}%20%29&pageSize=${limit}`,
+//         // images, maps and artefacts
+//         `https://trove.nla.gov.au/api/search/21?terms=%28%20${query}%20%29&pageSize=${limit}`,
 
-        // research and reports
-        `https://trove.nla.gov.au/api/search/136?terms=%28%20${query}%20%29&pageSize=${limit}`,
+//         // research and reports
+//         `https://trove.nla.gov.au/api/search/136?terms=%28%20${query}%20%29&pageSize=${limit}`,
 
-        // books and libraries
-        `https://trove.nla.gov.au/api/search/135?terms=%28%20${query}%20%29&pageSize=${limit}`,
+//         // books and libraries
+//         `https://trove.nla.gov.au/api/search/135?terms=%28%20${query}%20%29&pageSize=${limit}`,
 
-        // diaries, letters and archives
-        `https://trove.nla.gov.au/api/search/12?terms=%28%20${query}%20%29&pageSize=${limit}`,
+//         // diaries, letters and archives
+//         `https://trove.nla.gov.au/api/search/12?terms=%28%20${query}%20%29&pageSize=${limit}`,
 
-        // people and organisations
-        `https://trove.nla.gov.au/api/search/18?terms=%28%20${query}%20%29&pageSize=${limit}`,
+//         // people and organisations
+//         `https://trove.nla.gov.au/api/search/18?terms=%28%20${query}%20%29&pageSize=${limit}`,
 
-        // music, audio and video
-        `https://trove.nla.gov.au/api/search/14?terms=%28%20${query}%20%29&pageSize=${limit}`,
-    ];
+//         // music, audio and video
+//         `https://trove.nla.gov.au/api/search/14?terms=%28%20${query}%20%29&pageSize=${limit}`,
+//     ];
 
-    const docs = [];
-    for (let endpoint of endpoints) {
-        let resp = await search({
-            testing,
-            sourceId: "trove",
-            url: endpoint,
-            headers: {
-                apiKey,
-            },
-            query,
-            items: (data) => data.works,
-            mapDict: {
-                id: (work) => `trove::${work.id}`,
-                title: (work) => work.title || "Untitled",
-                type: () => "work",
-                description: ["snippet", ""],
-                date: ["issued", ""],
-                url: (work) => work.troveUrl || `https://trove.nla.gov.au/work/${work.id}`,
-                thumbnailUrl: (work) =>
-                    work.identifier?.find((i) => i.type === "thumbnail")?.value || "",
-                sourceId: () => "trove",
-                subjects: ["subject", []],
-                creators: ["contributor", []],
-            },
-        });
-        docs.push(...resp);
-    }
-    return docs;
-}
+//     const docs = [];
+//     for (let endpoint of endpoints) {
+//         let resp = await search({
+//             testing,
+//             sourceId: "trove",
+//             url: endpoint,
+//             headers: {
+//                 apiKey,
+//             },
+//             query,
+//             items: (data) => data.works,
+//             mapDict: {
+//                 id: (work) => `trove::${work.id}`,
+//                 title: (work) => work.title || "Untitled",
+//                 type: () => "work",
+//                 description: ["snippet", ""],
+//                 date: ["issued", ""],
+//                 url: (work) => work.troveUrl || `https://trove.nla.gov.au/work/${work.id}`,
+//                 thumbnailUrl: (work) =>
+//                     work.identifier?.find((i) => i.type === "thumbnail")?.value || "",
+//                 sourceId: () => "trove",
+//                 subjects: ["subject", []],
+//                 creators: ["contributor", []],
+//             },
+//         });
+//         docs.push(...resp);
+//     }
+//     return docs;
+// }
 
 // ─── Europeana (HTML scrape) ─────────────────────────────────────────────────
-export async function europeanaSearchFn({ query, testing = false }) {
-    const EUROPEANA_SCRAPE_MAPPING = {
-        container: "div.card-wrapper",
-        fields: {
-            title: { selector: ".card-title .link-text", extract: "text" },
-            url: { selector: "a.card-link", extract: "href" },
-            image: { selector: ".card-img:not(.default-thumbnail) img", extract: "src" },
-        },
-    };
+// export async function europeanaSearchFn({ query, testing = false }) {
+//     const EUROPEANA_SCRAPE_MAPPING = {
+//         container: "div.card-wrapper",
+//         fields: {
+//             title: { selector: ".card-title .link-text", extract: "text" },
+//             url: { selector: "a.card-link", extract: "href" },
+//             image: { selector: ".card-img:not(.default-thumbnail) img", extract: "src" },
+//         },
+//     };
 
-    const url = `https://www.europeana.eu/en/search?page=1&view=list&query=${query}`;
-    const key = `europeana::${query}`;
-    return cachedFetch(key, async () => {
-        const raw = await fetchHtmlAndExtract(testing, url, EUROPEANA_SCRAPE_MAPPING);
-        return raw.map((item) => ({
-            id: `europeana::${encodeURIComponent(item.url || item.title)}`,
-            title: item.title || "Untitled",
-            type: "work",
-            description: "",
-            date: "",
-            url: item.url ? `https://www.europeana.eu${item.url}` : "",
-            thumbnailUrl: item.image || "",
-            sourceId: "europeana",
-            subjects: [],
-            creators: [],
-        }));
-    });
-}
+//     const url = `https://www.europeana.eu/en/search?page=1&view=list&query=${query}`;
+//     const key = `europeana::${query}`;
+//     return cachedFetch(key, async () => {
+//         const raw = await fetchHtmlAndExtract(testing, url, EUROPEANA_SCRAPE_MAPPING);
+//         return raw.map((item) => ({
+//             id: `europeana::${encodeURIComponent(item.url || item.title)}`,
+//             title: item.title || "Untitled",
+//             type: "work",
+//             description: "",
+//             date: "",
+//             url: item.url ? `https://www.europeana.eu${item.url}` : "",
+//             thumbnailUrl: item.image || "",
+//             sourceId: "europeana",
+//             subjects: [],
+//             creators: [],
+//         }));
+//     });
+// }
 
 // ─── Rijksmuseum ─────────────────────────────────────────────────────────────
 // function rijksSearchFn(query, { apiKey = API_KEYS.rijksmuseum } = {}) {
@@ -167,65 +177,66 @@ export async function europeanaSearchFn({ query, testing = false }) {
 // }
 
 // ─── DPLA ────────────────────────────────────────────────────────────────────
-export async function dplaSearchFn({ query, testing = false }) {
-    const DPLA_SCRAPE_MAPPING = {
-        container: 'li[class*="listItem"]',
-        fields: {
-            title: { selector: "h2 a", extract: "text" },
-            itemId: { selector: 'input[type="checkbox"]', extract: "data-id" },
-            image: { selector: "img", extract: "src" },
-            creator: { selector: '[class*="itemAuthorAndDate"] span:last-child', extract: "text" },
-        },
-    };
+// export async function dplaSearchFn({ query, testing = false }) {
+//     const DPLA_SCRAPE_MAPPING = {
+//         container: 'li[class*="listItem"]',
+//         fields: {
+//             title: { selector: "h2 a", extract: "text" },
+//             itemId: { selector: 'input[type="checkbox"]', extract: "data-id" },
+//             image: { selector: "img", extract: "src" },
+//             creator: { selector: '[class*="itemAuthorAndDate"] span:last-child', extract: "text" },
+//         },
+//     };
 
-    const url = `https://dp.la/search?q=${encodeURIComponent(query)}`;
-    const key = `dpla::${query}`;
-    return cachedFetch(key, async () => {
-        const raw = await fetchHtmlAndExtract(testing, url, DPLA_SCRAPE_MAPPING);
-        return raw
-            .filter((item) => item.itemId)
-            .map((item) => ({
-                id: `dpla::${item.itemId}`,
-                title: item.title || "Untitled",
-                type: "work",
-                description: "",
-                date: "",
-                url: `https://dp.la/item/${item.itemId}`,
-                thumbnailUrl: item.image || "",
-                sourceId: "dpla",
-                subjects: [],
-                creators: item.creator ? [item.creator] : [],
-            }));
-    });
-}
+//     const url = `https://dp.la/search?q=${encodeURIComponent(query)}`;
+//     const key = `dpla::${query}`;
+//     return cachedFetch(key, async () => {
+//         const raw = await fetchHtmlAndExtract(testing, url, DPLA_SCRAPE_MAPPING);
+//         return raw
+//             .filter((item) => item.itemId)
+//             .map((item) => ({
+//                 id: `dpla::${item.itemId}`,
+//                 title: item.title || "Untitled",
+//                 type: "work",
+//                 description: "",
+//                 date: "",
+//                 url: `https://dp.la/item/${item.itemId}`,
+//                 thumbnailUrl: item.image || "",
+//                 sourceId: "dpla",
+//                 subjects: [],
+//                 creators: item.creator ? [item.creator] : [],
+//             }));
+//     });
+// }
 
 // ─── SLV ────────────────────────────────────────────────────────────────────
-export async function slvSearchFn({ query, limit = 10, testing = false }) {
-    const url = `https://find.slv.vic.gov.au/primaws/rest/pub/pnxs?acTriggered=false&blendFacetsSeparately=false&citationTrailFilterByAvailability=true&disableCache=false&getMore=0&inst=61SLV_INST&isCDSearch=false&lang=en&limit=${limit}&newspapersActive=true&newspapersSearch=false&offset=0&otbRanking=false&pcAvailability=true&qExclude=&qInclude=&rapido=false&refEntryActive=false&rtaLinks=true&scope=slv_local&searchInFulltextUserSelection=true&skipDelivery=Y&sort=rank&tab=searchProfile&vid=61SLV_INST%3ASLV&q=any,contains,${encodeURIComponent(query)}`;
-    return await search({
-        testing,
-        sourceId: "slv",
-        url,
-        query,
-        items: (data) => data.docs || [],
-        mapDict: {
-            id: (doc) => `slv::${doc["@id"]}`,
-            title: "pnx.display.title[0]",
-            type: "pnx.display.type[0]",
-            description: ["pnx.display.description[0]", ""],
-            date: ["pnx.display.lds19[0]", ""],
-            url: ["@id", ""],
-            thumbnailUrl: ["object", ""],
-            sourceId: () => "slv",
-            subjects: (doc) =>
-                (doc.pnx.display.lds11 || []).map((s) => (typeof s === "string" ? s : s.name)),
-            creators: (doc) => {
-                const au = doc.pnx.addata.au;
-                return Array.isArray(au) ? au : au ? [au] : [];
-            },
-        },
-    });
-}
+// export async function slvSearchFn({ query, limit = 10, testing = false }) {
+//     const url = `https://find.slv.vic.gov.au/primaws/rest/pub/pnxs?acTriggered=false&blendFacetsSeparately=false&citationTrailFilterByAvailability=true&disableCache=false&getMore=0&inst=61SLV_INST&isCDSearch=false&lang=en&limit=${limit}&newspapersActive=true&newspapersSearch=false&offset=0&otbRanking=false&pcAvailability=true&qExclude=&qInclude=&rapido=false&refEntryActive=false&rtaLinks=true&scope=slv_local&searchInFulltextUserSelection=true&skipDelivery=Y&sort=rank&tab=searchProfile&vid=61SLV_INST%3ASLV&q=any,contains,${encodeURIComponent(query)}`;
+//     return await search({
+//         testing,
+//         sourceId: "slv",
+//         url,
+//         query,
+//         total: (data) => data.info.total || null,
+//         items: (data) => data.docs || [],
+//         mapDict: {
+//             id: (doc) => `slv::${doc["@id"]}`,
+//             title: "pnx.display.title[0]",
+//             type: "pnx.display.type[0]",
+//             description: ["pnx.display.description[0]", ""],
+//             date: ["pnx.display.lds19[0]", ""],
+//             url: ["@id", ""],
+//             thumbnailUrl: ["object", ""],
+//             sourceId: () => "slv",
+//             subjects: (doc) =>
+//                 (doc.pnx.display.lds11 || []).map((s) => (typeof s === "string" ? s : s.name)),
+//             creators: (doc) => {
+//                 const au = doc.pnx.addata.au;
+//                 return Array.isArray(au) ? au : au ? [au] : [];
+//             },
+//         },
+//     });
+// }
 
 // ─── Source registry ─────────────────────────────────────────────────────────
 export const SOURCES = [
