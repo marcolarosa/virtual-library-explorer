@@ -156,21 +156,40 @@ export function initMap(cont) {
             if (anchor?.userData.material) {
                 anchor.userData.material.emissiveIntensity = PULSE_CONFIG.activeGlowIntensity;
             }
-        } else if (event.status === "done" && event.count > 0) {
-            sourcesWithData.add(event.sourceId);
-            // Transition to steady glow
-            if (!pulseStates.has(event.sourceId)) {
-                pulseStates.set(event.sourceId, {
-                    isSearching: false,
-                    nextRingTime: Date.now(),
-                });
+        } else if (event.status === "done") {
+            if (event.count > 0) {
+                sourcesWithData.add(event.sourceId);
+                // Transition to steady glow
+                if (!pulseStates.has(event.sourceId)) {
+                    pulseStates.set(event.sourceId, {
+                        isSearching: false,
+                        nextRingTime: Date.now(),
+                    });
+                } else {
+                    pulseStates.get(event.sourceId).isSearching = false;
+                }
+                // Update anchor glow to steady
+                const anchor = anchorMeshes.get(event.sourceId);
+                if (anchor?.userData.material) {
+                    anchor.userData.material.emissiveIntensity = PULSE_CONFIG.steadyGlowIntensity;
+                }
             } else {
-                pulseStates.get(event.sourceId).isSearching = false;
-            }
-            // Update anchor glow to steady
-            const anchor = anchorMeshes.get(event.sourceId);
-            if (anchor?.userData.material) {
-                anchor.userData.material.emissiveIntensity = PULSE_CONFIG.steadyGlowIntensity;
+                // No results — treat like error
+                sourcesWithData.delete(event.sourceId);
+                pulseStates.delete(event.sourceId);
+                const anchor = anchorMeshes.get(event.sourceId);
+                if (anchor?.userData.material) {
+                    anchor.userData.material.emissiveIntensity = 0;
+                }
+                // Remove any rings for this source
+                for (let i = ringMeshes.length - 1; i >= 0; i--) {
+                    if (ringMeshes[i].sourceId === event.sourceId) {
+                        scene.remove(ringMeshes[i].mesh);
+                        ringMeshes[i].mesh.geometry.dispose();
+                        ringMeshes[i].mesh.material.dispose();
+                        ringMeshes.splice(i, 1);
+                    }
+                }
             }
         } else if (event.status === "error") {
             sourcesWithData.delete(event.sourceId);
@@ -294,7 +313,7 @@ function _createSourceAnchors() {
             roughness: 1,
         });
         const mesh = new THREE.Mesh(
-            new THREE.SphereGeometry(2, 12, 12),
+            new THREE.SphereGeometry(4, 12, 12),
             material,
         );
         mesh.position.copy(pos);
@@ -311,7 +330,7 @@ function _createSourceAnchors() {
             roughness: 1,
         });
         const spike = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.3, 0, 6, 6),
+            new THREE.CylinderGeometry(0.6, 0, 12, 6),
             spikeMaterial,
         );
         const outward = pos.clone().normalize();

@@ -202,9 +202,18 @@ export function renderSourcePanel() {
                     error: '<span class="text-[#ff6b6b]">error</span>',
                 }[status.status] || "idle";
 
+            let labelClass = "flex-1 text-text";
+            let labelStyle = "";
+            if (status.status === "error") {
+                labelClass += " line-through";
+                labelStyle = 'color:#5a7090';
+            } else if (status.status === "done" && status.count === 0) {
+                labelStyle = 'color:#5a7090';
+            }
+
             row.innerHTML = `
         <span class="w-2 h-2 rounded-full shrink-0" style="background:${getRegionColor(src.region)}"></span>
-        <span class="flex-1 text-text">${src.label}</span>
+        <span class="${labelClass}"${labelStyle ? ` style="${labelStyle}"` : ""}>${src.label}</span>
         <span class="text-[10px] text-text font-mono">${statusText}</span>
       `;
             row.addEventListener("click", () => focusSource(src.id));
