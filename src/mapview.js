@@ -8,7 +8,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
-import { SOURCES } from "./sources.js";
+import { SOURCES, getRegionColor } from "./sources.js";
 import { on, emit } from "./bus.js";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -143,7 +143,7 @@ function _createSourceAnchors() {
         if (source.lat == null || source.lng == null) continue;
 
         const pos = lngLatToVec3(source.lng, source.lat);
-        const col = new THREE.Color(source.color);
+        const col = new THREE.Color(getRegionColor(source.region));
 
         // Dot on surface
         const mesh = new THREE.Mesh(
@@ -180,6 +180,36 @@ export function zoomToFit() {
     camera.position.set(0, 0, CAMERA_DISTANCE);
     controls.target.set(0, 0, 0);
     controls.update();
+}
+
+export function focusSource(sourceId) {
+    const source = SOURCES.find(s => s.id === sourceId);
+    if (!source || source.lat == null || source.lng == null) return;
+
+    const targetPos = lngLatToVec3(source.lng, source.lat);
+    const direction = targetPos.clone().normalize();
+    const cameraPos = direction.multiplyScalar(CAMERA_DISTANCE);
+
+    controls.autoRotate = false;
+
+    const startPos = camera.position.clone();
+    const startTarget = controls.target.clone();
+    const duration = 2000;
+    const startTime = Date.now();
+
+    const animate = () => {
+        const elapsed = Date.now() - startTime;
+        const t = Math.min(elapsed / duration, 1);
+
+        camera.position.lerpVectors(startPos, cameraPos, t);
+        controls.target.lerpVectors(startTarget, targetPos, t);
+        controls.update();
+
+        if (t < 1) {
+            requestAnimationFrame(animate);
+        }
+    };
+    animate();
 }
 
 /** No-op — ui.js reads state.nodes directly. */

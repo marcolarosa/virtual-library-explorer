@@ -1,9 +1,9 @@
 import { state } from "./state.js";
 import { on } from "./bus.js";
-import { SOURCES } from "./sources.js";
+import { SOURCES, getRegionColor } from "./sources.js";
 import { pinNode, unpinNode, setAnnotation, exportCollection, importGraph } from "./collection.js";
 import { runSearch, expandNode, getNodeDepth } from "./search.js";
-import { zoomToFit, refreshMap } from "./mapview.js";
+import { zoomToFit, refreshMap, focusSource } from "./mapview.js";
 import { debounce, truncate } from "./utils.js";
 
 // ─── DOM refs ─────────────────────────────────────────────────────────────────
@@ -18,7 +18,7 @@ let panelMode = null; // 'source' | 'node'
 
 export function initUI() {
     setupSearch();
-    setupControls();
+    // setupControls();
     setupSourcePanel();
     setupCollectionDrawer();
     setupDetailPanel();
@@ -48,68 +48,68 @@ function setupSearch() {
 
 // ─── Controls ─────────────────────────────────────────────────────────────────
 
-function setupControls() {
-    $("zoom-fit").addEventListener("click", zoomToFit);
+// function setupControls() {
+//     $("zoom-fit").addEventListener("click", zoomToFit);
 
-    $("toggle-labels").addEventListener("click", () => {
-        state.labelsVisible = !state.labelsVisible;
-        const btn = $("toggle-labels");
-        btn.classList.toggle("text-accent", state.labelsVisible);
-        btn.classList.toggle("border-accent", state.labelsVisible);
-        btn.classList.toggle("text-dim", !state.labelsVisible);
-        btn.classList.toggle("border-border", !state.labelsVisible);
-        refreshMap();
-    });
+//     $("toggle-labels").addEventListener("click", () => {
+//         state.labelsVisible = !state.labelsVisible;
+//         const btn = $("toggle-labels");
+//         btn.classList.toggle("text-accent", state.labelsVisible);
+//         btn.classList.toggle("border-accent", state.labelsVisible);
+//         btn.classList.toggle("text-dim", !state.labelsVisible);
+//         btn.classList.toggle("border-border", !state.labelsVisible);
+//         refreshMap();
+//     });
 
-    $("reset-graph").addEventListener("click", () => {
-        if (!confirm("Reset the graph? Your collection is preserved.")) return;
-        const { resetGraph, clearMap } = window.__appModules;
-        resetGraph();
-        clearMap();
-        updateStatusBar();
-        hideDetailPanel();
-        updateNodeCapWarning();
-    });
+//     $("reset-graph").addEventListener("click", () => {
+//         if (!confirm("Reset the graph? Your collection is preserved.")) return;
+//         const { resetGraph, clearMap } = window.__appModules;
+//         resetGraph();
+//         clearMap();
+//         updateStatusBar();
+//         hideDetailPanel();
+//         updateNodeCapWarning();
+//     });
 
-    setupFilters();
-}
+//     setupFilters();
+// }
 
-function setupFilters() {
-    const filterContainer = $("filter-sources");
-    const typeContainer = $("filter-types");
+// function setupFilters() {
+//     const filterContainer = $("filter-sources");
+//     const typeContainer = $("filter-types");
 
-    // Source filters
-    filterContainer.innerHTML = "";
-    for (const src of SOURCES) {
-        const label = document.createElement("label");
-        label.className =
-            "flex items-center gap-1 py-[3px] px-2 rounded-[10px] bg-surface border border-border text-dim text-[11px] cursor-pointer hover:bg-surface2";
-        label.style.borderLeft = `3px solid ${src.color}`;
-        label.innerHTML = `<input type="checkbox" class="accent-accent" checked data-source="${src.id}"> ${src.label}`;
-        label.querySelector("input").addEventListener("change", (e) => {
-            if (e.target.checked) state.filters.hiddenSources.delete(src.id);
-            else state.filters.hiddenSources.add(src.id);
-            refreshMap();
-        });
-        filterContainer.appendChild(label);
-    }
+//     // Source filters
+//     filterContainer.innerHTML = "";
+//     for (const src of SOURCES) {
+//         const label = document.createElement("label");
+//         label.className =
+//             "flex items-center gap-1 py-[3px] px-2 rounded-[10px] bg-surface border border-border text-dim text-[11px] cursor-pointer hover:bg-surface2";
+//         label.style.borderLeft = `3px solid ${getRegionColor(src.region)}`;
+//         label.innerHTML = `<input type="checkbox" class="accent-accent" checked data-source="${src.id}"> ${src.label}`;
+//         label.querySelector("input").addEventListener("change", (e) => {
+//             if (e.target.checked) state.filters.hiddenSources.delete(src.id);
+//             else state.filters.hiddenSources.add(src.id);
+//             refreshMap();
+//         });
+//         filterContainer.appendChild(label);
+//     }
 
-    // Type filters
-    const types = ["work", "person", "subject", "place", "organisation"];
-    typeContainer.innerHTML = "";
-    for (const type of types) {
-        const label = document.createElement("label");
-        label.className =
-            "flex items-center gap-1 py-[3px] px-2 rounded-[10px] bg-surface border border-border text-dim text-[11px] cursor-pointer hover:bg-surface2";
-        label.innerHTML = `<input type="checkbox" class="accent-accent" checked data-type="${type}"> ${type}`;
-        label.querySelector("input").addEventListener("change", (e) => {
-            if (e.target.checked) state.filters.hiddenTypes.delete(type);
-            else state.filters.hiddenTypes.add(type);
-            refreshMap();
-        });
-        typeContainer.appendChild(label);
-    }
-}
+//     // Type filters
+//     const types = ["work", "person", "subject", "place", "organisation"];
+//     typeContainer.innerHTML = "";
+//     for (const type of types) {
+//         const label = document.createElement("label");
+//         label.className =
+//             "flex items-center gap-1 py-[3px] px-2 rounded-[10px] bg-surface border border-border text-dim text-[11px] cursor-pointer hover:bg-surface2";
+//         label.innerHTML = `<input type="checkbox" class="accent-accent" checked data-type="${type}"> ${type}`;
+//         label.querySelector("input").addEventListener("change", (e) => {
+//             if (e.target.checked) state.filters.hiddenTypes.delete(type);
+//             else state.filters.hiddenTypes.add(type);
+//             refreshMap();
+//         });
+//         typeContainer.appendChild(label);
+//     }
+// }
 
 // ─── Source panel ─────────────────────────────────────────────────────────────
 
@@ -129,7 +129,7 @@ export function renderSourcePanel() {
     for (const src of SOURCES) {
         const status = state.sourceStatuses.get(src.id) || { status: "idle" };
         const row = document.createElement("div");
-        row.className = "flex items-center gap-1.5 px-3 py-1 text-xs";
+        row.className = "flex items-center gap-1.5 px-3 py-1 text-xs cursor-pointer";
         row.dataset.sourceId = src.id;
 
         const statusText =
@@ -142,15 +142,10 @@ export function renderSourcePanel() {
 
         row.innerHTML = `
       <span class="w-2 h-2 rounded-full shrink-0" style="background:${src.color}"></span>
-      <label class="flex items-center gap-1 cursor-pointer flex-1">
-        <input type="checkbox" class="accent-accent" ${src.enabled ? "checked" : ""}>
-        <span class="text-text">${src.label}</span>
-      </label>
-      <span class="text-[10px] text-dim font-mono">${statusText}</span>
+      <span class="flex-1 text-text">${src.label}</span>
+      <span class="text-[10px] text-text font-mono">${statusText}</span>
     `;
-        row.querySelector("input").addEventListener("change", (e) => {
-            src.enabled = e.target.checked;
-        });
+        row.addEventListener("click", () => focusSource(src.id));
         list.appendChild(row);
     }
 }
@@ -183,7 +178,7 @@ export function renderCollectionDrawer() {
         const src = SOURCES.find((s) => s.id === sourceId);
         const group = document.createElement("div");
         group.className = "mb-2";
-        group.innerHTML = `<div class="font-mono text-[10px] uppercase tracking-[1px] px-3.5 py-1.5 font-semibold" style="color:${src?.color || "#888"}">${src?.label || sourceId}</div>`;
+        group.innerHTML = `<div class="font-mono text-[10px] uppercase tracking-[1px] px-3.5 py-1.5 font-semibold" style="color:${src ? getRegionColor(src.region) : "#888"}">${src?.label || sourceId}</div>`;
 
         for (const [nodeId, entry] of items) {
             const item = document.createElement("div");
@@ -231,7 +226,7 @@ function _setPanelHeader({ sourceId, showBack }) {
     if (src) {
         dot.style.background = src.color;
         dot.classList.remove("hidden");
-        title.textContent = src.label || src.shortLabel || sourceId;
+        title.textContent = src.label || src.label || sourceId;
         title.style.color = src.color;
     } else {
         dot.classList.add("hidden");
@@ -329,7 +324,7 @@ function renderDetailPanel(node) {
     $("detail-content").innerHTML = `
   <div class="flex gap-1.5 flex-wrap mb-2.5">
     <span class="text-[10px] py-0.5 px-2 rounded-[10px] font-mono uppercase tracking-[0.5px] bg-surface2 text-dim">${node.type}</span>
-    <span class="text-[10px] py-0.5 px-2 rounded-[10px] font-mono uppercase tracking-[0.5px] text-black font-semibold" style="background:${src?.color || "#888"}">${src?.label || node.sourceId}</span>
+    <span class="text-[10px] py-0.5 px-2 rounded-[10px] font-mono uppercase tracking-[0.5px] text-black font-semibold" style="background:${src ? getRegionColor(src.region) : "#888"}">${src?.label || node.sourceId}</span>
     ${node.expanded ? '<span class="text-[10px] py-0.5 px-2 rounded-[10px] font-mono uppercase tracking-[0.5px] bg-[rgba(58,143,255,0.2)] text-accent">expanded</span>' : ""}
     ${isPinned ? '<span class="text-[10px] py-0.5 px-2 rounded-[10px] font-mono uppercase tracking-[0.5px] bg-[rgba(255,215,0,0.2)] text-gold">pinned</span>' : ""}
   </div>
@@ -394,10 +389,7 @@ function renderDetailPanel(node) {
 
 export function updateStatusBar() {
     const bar = $("status-bar");
-    if (state.sourceStatuses.size === 0) {
-        bar.innerHTML = "";
-        return;
-    }
+    if (!bar) return;
 
     bar.innerHTML = [...state.sourceStatuses.entries()]
         .map(([id, s]) => {
@@ -418,9 +410,9 @@ export function updateStatusBar() {
                     : s.status === "querying"
                       ? " opacity-70"
                       : "";
-            return `<span class="${chipBase}${clsExtra}" style="border-color:${src?.color || "#888"}"
+            return `<span class="${chipBase}${clsExtra}" style="border-color:${src ? getRegionColor(src.region) : "#888"}"
       title="${src?.label || id}: ${s.status}${s.latency ? " · " + s.latency + "ms" : ""}"
-    >${src?.shortLabel || id} ${label}</span>`;
+    >${src?.label || id} ${label}</span>`;
         })
         .join("");
 }
@@ -516,6 +508,5 @@ function setupBusListeners() {
 
     on("search:done", () => {
         updateNodeCapWarning();
-        zoomToFit();
     });
 }

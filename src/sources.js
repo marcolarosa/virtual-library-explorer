@@ -4,6 +4,17 @@ import { europeanaSearchFn } from "./sources/europe/europeana.js";
 import { dplaSearchFn } from "./sources/americas/digital-public-library-of-america.js";
 import { locSearchFn } from "./sources/americas/library-of-congress.js";
 
+// ─── Region colors ────────────────────────────────────────────────────────────
+export const REGION_COLORS = {
+    "Americas": "#e74c3c",
+    "Europe": "#3498db",
+    "Oceania": "#2ecc71",
+};
+
+export function getRegionColor(region) {
+    return REGION_COLORS[region] || "#888888";
+}
+
 // ─── Source registry ─────────────────────────────────────────────────────────
 export const SOURCES = [
     {
@@ -12,7 +23,6 @@ export const SOURCES = [
         shortLabel: "LoC",
         country: "US",
         region: "Americas",
-        color: "#1abc9c",
         searchFn: locSearchFn,
         enabled: false,
         lat: 38.9,
@@ -24,7 +34,6 @@ export const SOURCES = [
         shortLabel: "Trove",
         country: "AU",
         region: "Oceania",
-        color: "#2ecc71",
         searchFn: troveSearchFn,
         enabled: false,
         lat: -35.3,
@@ -36,7 +45,6 @@ export const SOURCES = [
         shortLabel: "Euro",
         country: "EU",
         region: "Europe",
-        color: "#3498db",
         searchFn: europeanaSearchFn,
         enabled: true,
         lat: 50.8,
@@ -59,7 +67,6 @@ export const SOURCES = [
         shortLabel: "DPLA",
         country: "US",
         region: "Americas",
-        color: "#e74c3c",
         searchFn: dplaSearchFn,
         enabled: false,
         lat: 42.4,
@@ -71,7 +78,6 @@ export const SOURCES = [
         shortLabel: "SLV",
         country: "AU",
         region: "Oceania",
-        color: "#e74c3c",
         searchFn: slvSearchFn,
         enabled: true,
         lat: -37.8,

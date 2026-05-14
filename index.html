@@ -1,120 +1,183 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" class="h-full overflow-hidden">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Library Graph Explorer</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            bg:       '#080c10',
-            surface:  '#0f1520',
-            surface2: '#16202e',
-            border:   '#1e2d42',
-            text:     '#c8d8e8',
-            dim:      '#5a7090',
-            bright:   '#e8f0f8',
-            gold:     '#ffd700',
-            accent:   '#3a8fff',
-          },
-          fontFamily: {
-            mono: ["'JetBrains Mono'", "'Fira Code'", "'Courier New'", 'monospace'],
-            sans: ["'Inter'", "'Segoe UI'", 'system-ui', 'sans-serif'],
-          },
-          spacing: { panel: '320px' },
-          boxShadow: { panel: '0 4px 24px rgba(0,0,0,0.6)' },
-        },
-      },
-    }
-  </script>
-  <link rel="stylesheet" href="styles/main.css">
-</head>
-<body class="h-full bg-bg text-text font-sans text-[13px]">
-<div id="app" class="relative w-screen h-screen">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Library Graph Explorer</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script>
+            tailwind.config = {
+                theme: {
+                    extend: {
+                        colors: {
+                            bg: "#080c10",
+                            surface: "#0f1520",
+                            surface2: "#16202e",
+                            border: "#1e2d42",
+                            text: "#c8d8e8",
+                            dim: "#5a7090",
+                            bright: "#e8f0f8",
+                            gold: "#ffd700",
+                            accent: "#3a8fff",
+                        },
+                        fontFamily: {
+                            mono: ["'JetBrains Mono'", "'Fira Code'", "'Courier New'", "monospace"],
+                            sans: ["'Inter'", "'Segoe UI'", "system-ui", "sans-serif"],
+                        },
+                        spacing: { panel: "320px" },
+                        boxShadow: { panel: "0 4px 24px rgba(0,0,0,0.6)" },
+                    },
+                },
+            };
+        </script>
+        <link rel="stylesheet" href="styles/main.css" />
+    </head>
+    <body class="h-full bg-bg text-text font-sans text-[13px]">
+        <div id="app" class="relative w-screen h-screen">
+            <!-- 3D canvas fills the screen -->
+            <div id="graph-container" class="absolute inset-0"></div>
 
-  <!-- 3D canvas fills the screen -->
-  <div id="graph-container" class="absolute inset-0"></div>
+            <!-- Search bar -->
+            <header
+                id="search-bar"
+                class="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-surface border border-border rounded-[32px] px-2.5 py-1.5 shadow-panel z-[100] min-w-[480px]"
+            >
+                <button
+                    id="collection-toggle"
+                    class="bg-transparent border border-border text-text rounded-[20px] py-1 px-2 cursor-pointer text-[14px] transition-colors duration-200 hover:bg-border"
+                    title="Toggle collection"
+                >
+                    ⊞
+                </button>
+                <input
+                    id="search-input"
+                    type="text"
+                    class="flex-1 bg-transparent border-none text-bright font-mono text-[14px] outline-none px-1.5 placeholder:text-dim"
+                    placeholder="Search across libraries…"
+                    autocomplete="off"
+                    spellcheck="false"
+                />
+                <button
+                    id="search-btn"
+                    class="bg-accent text-white border border-accent rounded-[20px] py-1 px-3 cursor-pointer text-xs transition-colors duration-200 whitespace-nowrap hover:bg-[#2070dd]"
+                >
+                    Search
+                </button>
+                <button
+                    id="import-btn"
+                    class="bg-transparent border border-border text-text rounded-[20px] py-1 px-2 cursor-pointer text-[14px] transition-colors duration-200 hover:bg-border"
+                    title="Load graph"
+                >
+                    ↑
+                </button>
+                <button
+                    id="export-btn"
+                    class="bg-transparent border border-border text-text rounded-[20px] py-1 px-2 cursor-pointer text-[14px] transition-colors duration-200 hover:bg-border"
+                    title="Export collection"
+                >
+                    ↓
+                </button>
+            </header>
 
-  <!-- Search bar -->
-  <header id="search-bar" class="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-surface border border-border rounded-[32px] px-2.5 py-1.5 shadow-panel z-[100] min-w-[480px]">
-    <button id="collection-toggle" class="bg-transparent border border-border text-text rounded-[20px] py-1 px-2 cursor-pointer text-[14px] transition-colors duration-200 hover:bg-border" title="Toggle collection">⊞</button>
-    <input id="search-input" type="text" class="flex-1 bg-transparent border-none text-bright font-mono text-[14px] outline-none px-1.5 placeholder:text-dim" placeholder="Search across libraries…" autocomplete="off" spellcheck="false">
-    <button id="search-btn" class="bg-accent text-white border border-accent rounded-[20px] py-1 px-3 cursor-pointer text-xs transition-colors duration-200 whitespace-nowrap hover:bg-[#2070dd]">Search</button>
-    <button id="import-btn" class="bg-transparent border border-border text-text rounded-[20px] py-1 px-2 cursor-pointer text-[14px] transition-colors duration-200 hover:bg-border" title="Load graph">↑</button>
-    <button id="export-btn" class="bg-transparent border border-border text-text rounded-[20px] py-1 px-2 cursor-pointer text-[14px] transition-colors duration-200 hover:bg-border" title="Export collection">↓</button>
-  </header>
+            <!-- Collection drawer (left) -->
+            <aside
+                id="collection-drawer"
+                class="absolute top-0 bottom-0 w-panel bg-surface border border-border border-l-0 rounded-r-md flex flex-col transition-transform duration-200 ease-in-out z-[200] overflow-hidden left-0 -translate-x-full"
+            >
+                <div
+                    class="flex items-center justify-between px-3.5 py-3 border-b border-border font-semibold text-bright shrink-0"
+                >
+                    <span>Collection</span>
+                    <button
+                        id="collection-close"
+                        class="bg-transparent border-none text-dim cursor-pointer text-[18px] px-1 hover:text-bright"
+                    >
+                        ×
+                    </button>
+                </div>
+                <div id="collection-list" class="flex-1 overflow-y-auto py-2"></div>
+                <div class="py-2.5 px-3.5 border-t border-border shrink-0">
+                    <button
+                        id="export-btn-2"
+                        class="w-full py-2 bg-surface2 border border-border text-text rounded-[6px] cursor-pointer hover:bg-border"
+                    >
+                        Export collection JSON
+                    </button>
+                </div>
+            </aside>
 
-  <!-- Per-source status chips -->
-  <div id="status-bar" class="absolute top-16 left-1/2 -translate-x-1/2 flex gap-1.5 flex-wrap justify-center z-[100] pointer-events-none"></div>
+            <!-- Detail / source-results panel (right) -->
+            <aside
+                id="detail-panel"
+                class="absolute top-0 bottom-0 w-panel bg-surface border border-border border-r-0 rounded-l-md flex flex-col transition-transform duration-200 ease-in-out z-[200] right-0 translate-x-full"
+            >
+                <div class="flex items-center gap-2 px-3 py-2.5 border-b border-border shrink-0">
+                    <button
+                        id="panel-back-btn"
+                        class="hidden text-dim text-base leading-none bg-transparent border-none cursor-pointer hover:text-bright"
+                    >
+                        ←
+                    </button>
+                    <span
+                        id="panel-source-dot"
+                        class="hidden w-2 h-2 rounded-full flex-shrink-0"
+                    ></span>
+                    <span
+                        id="panel-title"
+                        class="text-sm font-semibold flex-1 truncate min-w-0"
+                    ></span>
+                    <button
+                        id="detail-close"
+                        class="bg-transparent border-none text-dim cursor-pointer text-xl leading-none hover:text-bright ml-1"
+                    >
+                        ×
+                    </button>
+                </div>
+                <div id="detail-content" class="flex-1 overflow-y-auto p-4"></div>
+            </aside>
 
-  <!-- Collection drawer (left) -->
-  <aside id="collection-drawer" class="absolute top-0 bottom-0 w-panel bg-surface border border-border border-l-0 rounded-r-md flex flex-col transition-transform duration-200 ease-in-out z-[200] overflow-hidden left-0 -translate-x-full">
-    <div class="flex items-center justify-between px-3.5 py-3 border-b border-border font-semibold text-bright shrink-0">
-      <span>Collection</span>
-      <button id="collection-close" class="bg-transparent border-none text-dim cursor-pointer text-[18px] px-1 hover:text-bright">×</button>
-    </div>
-    <div id="collection-list" class="flex-1 overflow-y-auto py-2"></div>
-    <div class="py-2.5 px-3.5 border-t border-border shrink-0">
-      <button id="export-btn-2" class="w-full py-2 bg-surface2 border border-border text-text rounded-[6px] cursor-pointer hover:bg-border">Export collection JSON</button>
-    </div>
-  </aside>
+            <!-- Source panel (top-right) -->
+            <div
+                id="source-panel"
+                class="absolute top-4 right-4 bg-surface border border-border rounded-[6px] shadow-panel z-[100] min-w-[200px]"
+            >
+                <div
+                    id="source-panel-header"
+                    class="flex items-center justify-between px-3 py-2 text-[11px] font-semibold uppercase tracking-[1px] text-text"
+                >
+                    Sources
+                    <button
+                        id="source-panel-toggle"
+                        class="bg-transparent border-none cursor-pointer text-[14px]"
+                    >
+                        −
+                    </button>
+                </div>
+                <div id="source-list" class="pt-1 pb-2"></div>
+            </div>
 
-  <!-- Detail / source-results panel (right) -->
-  <aside id="detail-panel" class="absolute top-0 bottom-0 w-panel bg-surface border border-border border-r-0 rounded-l-md flex flex-col transition-transform duration-200 ease-in-out z-[200] right-0 translate-x-full">
-    <div class="flex items-center gap-2 px-3 py-2.5 border-b border-border shrink-0">
-      <button id="panel-back-btn" class="hidden text-dim text-base leading-none bg-transparent border-none cursor-pointer hover:text-bright">←</button>
-      <span id="panel-source-dot" class="hidden w-2 h-2 rounded-full flex-shrink-0"></span>
-      <span id="panel-title" class="text-sm font-semibold flex-1 truncate min-w-0"></span>
-      <button id="detail-close" class="bg-transparent border-none text-dim cursor-pointer text-xl leading-none hover:text-bright ml-1">×</button>
-    </div>
-    <div id="detail-content" class="flex-1 overflow-y-auto p-4"></div>
-  </aside>
+            <!-- Node cap warning -->
+            <div
+                id="node-cap-warning"
+                class="hidden absolute bottom-6 left-1/2 -translate-x-1/2 bg-[rgba(255,107,107,0.15)] border border-[#ff6b6b] text-[#ff6b6b] rounded-[6px] px-4 py-2 text-xs z-[100] pointer-events-none"
+            >
+                Graph limit reached (500 nodes) — reset to continue exploring.
+            </div>
 
-  <!-- Source panel (top-right) -->
-  <div id="source-panel" class="absolute top-4 right-4 bg-surface border border-border rounded-[6px] shadow-panel z-[100] min-w-[200px]">
-    <div id="source-panel-header" class="flex items-center justify-between px-3 py-2 text-[11px] font-semibold uppercase tracking-[1px] text-dim">
-      Sources
-      <button id="source-panel-toggle" class="bg-transparent border-none text-dim cursor-pointer text-[14px]">−</button>
-    </div>
-    <div id="source-list" class="pt-1 pb-2"></div>
-  </div>
+            <!-- Hidden file input for import -->
+            <input type="file" id="import-file" accept=".json" style="display: none" />
+        </div>
 
-  <!-- Controls (bottom-left) -->
-  <div id="controls" class="absolute bottom-6 left-4 flex flex-col gap-1.5 z-[100]">
-    <button id="zoom-fit"      class="w-9 h-9 bg-surface border border-border text-dim rounded-[6px] cursor-pointer text-[14px] shadow-panel transition-colors duration-200 hover:text-bright hover:bg-surface2" title="Zoom to fit">⊡</button>
-    <button id="toggle-labels" class="w-9 h-9 bg-surface border border-accent text-accent rounded-[6px] cursor-pointer text-[14px] shadow-panel transition-colors duration-200 hover:text-bright hover:bg-surface2" title="Toggle labels">Aa</button>
-    <button id="reset-graph"   class="w-9 h-9 bg-surface border border-border text-dim rounded-[6px] cursor-pointer text-[14px] shadow-panel transition-colors duration-200 hover:text-bright hover:bg-surface2" title="Reset graph">↺</button>
-  </div>
+        <!-- CDN dependencies — load before app modules -->
+        <script type="importmap">
+            {
+                "imports": {
+                    "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+                    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
+                }
+            }
+        </script>
 
-  <!-- Source + type filters (bottom, left of controls) -->
-  <div id="filter-panel" class="absolute bottom-6 left-16 z-[100] flex flex-col gap-1.5">
-    <div id="filter-sources" class="flex flex-wrap gap-1"></div>
-    <div id="filter-types"   class="flex flex-wrap gap-1"></div>
-  </div>
-
-  <!-- Node cap warning -->
-  <div id="node-cap-warning" class="hidden absolute bottom-6 left-1/2 -translate-x-1/2 bg-[rgba(255,107,107,0.15)] border border-[#ff6b6b] text-[#ff6b6b] rounded-[6px] px-4 py-2 text-xs z-[100] pointer-events-none">
-    Graph limit reached (500 nodes) — reset to continue exploring.
-  </div>
-
-  <!-- Hidden file input for import -->
-  <input type="file" id="import-file" accept=".json" style="display:none">
-
-</div>
-
-<!-- CDN dependencies — load before app modules -->
-<script type="importmap">
-{
-  "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
-  }
-}
-</script>
-
-<script type="module" src="src/main.js"></script>
-</body>
+        <script type="module" src="src/main.js"></script>
+    </body>
 </html>
