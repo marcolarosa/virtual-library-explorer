@@ -5,12 +5,13 @@
   >
     <div class="flex items-center justify-between px-3.5 py-3 border-b border-border font-semibold text-bright shrink-0">
       <span>Collection ({{ collectionStore.items.size }})</span>
-      <button
-        class="bg-transparent border-none text-dim cursor-pointer text-[18px] px-1 hover:text-bright"
+      <Button
+        icon="pi pi-times"
+        rounded
+        text
+        severity="secondary"
         @click="uiStore.collectionDrawerOpen = false"
-      >
-        ×
-      </button>
+      />
     </div>
     <div class="flex-1 overflow-y-auto py-2">
       <div v-if="collectionStore.items.size === 0" class="px-3 py-4 text-dim text-xs">
@@ -33,36 +34,38 @@
             >
               {{ item.label }}
             </span>
-            <button
-              class="bg-transparent border-none text-dim text-[12px] cursor-pointer hover:text-bright"
+            <Button
+              icon="pi pi-times"
+              rounded
+              text
+              severity="secondary"
+              size="small"
               @click="unpinNode(nodeId)"
-              title="Unpin"
-            >
-              ✕
-            </button>
+            />
           </div>
-          <textarea
-            :value="item.annotation"
-            class="w-full bg-surface2 border border-border rounded text-[11px] p-1 text-text focus:outline-none focus:border-accent resize-none"
+          <Textarea
+            :model-value="item.annotation"
+            class="w-full text-[11px]"
             rows="2"
             placeholder="Add note…"
-            @input="(e) => setAnnotation(nodeId, e.target.value)"
-          ></textarea>
+            @update:model-value="(v) => setAnnotation(nodeId, v)"
+          />
         </div>
       </template>
     </div>
     <div class="py-2.5 px-3.5 border-t border-border shrink-0">
-      <button
-        class="w-full py-2 bg-surface2 border border-border text-text rounded-[6px] cursor-pointer hover:bg-border text-xs"
+      <Button
+        label="Export collection JSON"
+        class="w-full"
         @click="handleExport"
-      >
-        Export collection JSON
-      </button>
+      />
     </div>
   </aside>
 </template>
 
 <script setup lang="ts">
+import Button from 'primevue/button'
+import Textarea from 'primevue/textarea'
 import { useUIStore } from '../stores/ui'
 import { useCollectionStore } from '../stores/collection'
 import { useGraphStore } from '../stores/graph'

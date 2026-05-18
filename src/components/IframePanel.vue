@@ -5,12 +5,13 @@
   >
     <div class="flex items-center justify-between px-3 py-2.5 border-b border-border shrink-0">
       <span class="text-sm font-semibold text-text flex-1 truncate">{{ uiStore.iframeTitle }}</span>
-      <button
-        class="bg-transparent border-none text-dim cursor-pointer text-xl leading-none hover:text-bright"
+      <Button
+        icon="pi pi-times"
+        rounded
+        text
+        severity="secondary"
         @click="uiStore.closeIframePanel()"
-      >
-        ×
-      </button>
+      />
     </div>
     <iframe
       v-if="uiStore.iframeUrl"
@@ -23,6 +24,7 @@
 </template>
 
 <script setup lang="ts">
+import Button from 'primevue/button'
 import { useUIStore } from '../stores/ui'
 
 const uiStore = useUIStore()

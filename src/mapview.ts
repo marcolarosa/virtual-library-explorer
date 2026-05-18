@@ -4,6 +4,7 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { SOURCES, getRegionColor } from "./sources";
 import { useSourcesStore } from "./stores/sources";
 import { useUIStore } from "./stores/ui";
+import { useGraphStore } from "./stores/graph";
 import { runSearch } from "./services/search";
 
 const GLOBE_RADIUS = 100;
@@ -166,6 +167,15 @@ export function initMap(cont: HTMLElement): void {
         if (hits.length > 0) {
             const sourceId = (hits[0].object as any).userData.sourceId;
             focusSource(sourceId);
+
+            const graphStore = useGraphStore();
+            const uiStore = useUIStore();
+            const resultNode = [...graphStore.nodes.values()].find(
+                node => node.sourceId === sourceId && node.type !== 'query'
+            );
+            if (resultNode) {
+                uiStore.selectNode(resultNode);
+            }
         }
     });
 
