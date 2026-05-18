@@ -4,8 +4,7 @@
         <SearchBar />
         <SourcePanel />
         <CollectionDrawer />
-        <DetailPanel />
-        <IframePanel />
+        <LocationResultsDrawer />
     </div>
 </template>
 
@@ -16,8 +15,7 @@ import GlobeView from "./components/GlobeView.vue";
 import SearchBar from "./components/SearchBar.vue";
 import SourcePanel from "./components/SourcePanel.vue";
 import CollectionDrawer from "./components/CollectionDrawer.vue";
-import DetailPanel from "./components/DetailPanel.vue";
-import IframePanel from "./components/IframePanel.vue";
+import LocationResultsDrawer from "./components/LocationResultsDrawer.vue";
 
 const collectionStore = useCollectionStore();
 

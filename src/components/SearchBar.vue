@@ -54,7 +54,7 @@ import Menu from "primevue/menu";
 import { useUIStore } from "../stores/ui";
 import { debounce } from "../utils";
 import { runSearch } from "../services/search";
-import { exportCollection, importGraph } from "../services/collection";
+import { exportCollection, importCollection } from "../services/collection";
 
 const uiStore = useUIStore();
 const query = ref<string>("");
@@ -94,7 +94,7 @@ const handleImport = (e: Event): void => {
     reader.onload = (event: ProgressEvent<FileReader>): void => {
         try {
             const data = JSON.parse(event.target?.result as string);
-            importGraph(data);
+            importCollection(data);
             query.value = "";
         } catch (err) {
             alert(

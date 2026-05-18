@@ -28,7 +28,7 @@
               ></span>
               <span
                 class="text-bright font-semibold truncate flex-1 cursor-pointer hover:text-accent"
-                @click="selectNode(nodeId)"
+                @click="selectCollectionItem(item, nodeId)"
               >
                 {{ item.label }}
               </span>
@@ -66,24 +66,20 @@ import Textarea from 'primevue/textarea'
 import Drawer from 'primevue/drawer'
 import { useUIStore } from '../stores/ui'
 import { useCollectionStore } from '../stores/collection'
-import { useGraphStore } from '../stores/graph'
 import { getSource } from '../sources'
 import { unpinNode, setAnnotation, exportCollection } from '../services/collection'
 
 const uiStore = useUIStore()
 const collectionStore = useCollectionStore()
-const graphStore = useGraphStore()
 
 const getSourceColor = (sourceId: string): string => {
   const source = getSource(sourceId)
   return source?.color || '#888888'
 }
 
-const selectNode = (nodeId: string): void => {
-  const node = graphStore.nodes.get(nodeId)
-  if (node) {
-    uiStore.selectNode(node)
-  }
+const selectCollectionItem = (item: any, itemId: string): void => {
+  uiStore.selectLocation(item.sourceId)
+  uiStore.selectResult(itemId)
 }
 
 const handleExport = (): void => {

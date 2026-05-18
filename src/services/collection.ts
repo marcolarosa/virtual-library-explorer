@@ -1,56 +1,50 @@
-import { useGraphStore, type Node } from '../stores/graph'
 import { useCollectionStore, type CollectionItem } from '../stores/collection'
+import { useLocationsStore, type SearchResult } from '../stores/locations'
 import { SOURCES, getSource } from '../sources'
 
-export function pinNode(node: Node): void {
+export function pinResult(result: SearchResult, sourceId: string): void {
   const collectionStore = useCollectionStore()
-  const graphStore = useGraphStore()
 
-  if (collectionStore.items.has(node.id)) return
+  if (collectionStore.items.has(result.id)) return
 
-  collectionStore.pinNode(node.id, node)
-  graphStore.setNode(node.id, { pinned: true })
+  collectionStore.pinNode(result.id, {
+    id: result.id,
+    label: result.title,
+    type: result.type,
+    sourceId,
+    annotation: '',
+    result,
+  })
 }
 
-export function unpinNode(nodeId: string): void {
+export function unpinNode(resultId: string): void {
   const collectionStore = useCollectionStore()
-  const graphStore = useGraphStore()
 
-  if (!collectionStore.items.has(nodeId)) return
+  if (!collectionStore.items.has(resultId)) return
 
-  collectionStore.unpinNode(nodeId)
-  const node = graphStore.nodes.get(nodeId)
-  if (node) {
-    graphStore.setNode(nodeId, { pinned: false })
-  }
+  collectionStore.unpinNode(resultId)
 }
 
-export function setAnnotation(nodeId: string, text: string): void {
+export function setAnnotation(resultId: string, text: string): void {
   const collectionStore = useCollectionStore()
-  const graphStore = useGraphStore()
 
-  const entry = collectionStore.items.get(nodeId)
+  const entry = collectionStore.items.get(resultId)
   if (!entry) return
 
-  collectionStore.setAnnotation(nodeId, text)
-  const node = graphStore.nodes.get(nodeId)
-  if (node) {
-    graphStore.setNode(nodeId, { annotation: text })
-  }
+  collectionStore.setAnnotation(resultId, text)
 }
 
 export function exportCollection(): void {
   const collectionStore = useCollectionStore()
-  const graphStore = useGraphStore()
 
-  const nodes: any[] = []
+  const items: any[] = []
   const sourceIds = new Set<string>()
 
-  for (const [nodeId, entry] of collectionStore.items) {
+  for (const [resultId, entry] of collectionStore.items) {
     sourceIds.add(entry.sourceId)
-    nodes.push({
-      id: nodeId,
-      label: entry.label,
+    items.push({
+      id: resultId,
+      title: entry.label,
       type: entry.type || 'work',
       sourceId: entry.sourceId,
       annotation: entry.annotation,
@@ -60,59 +54,46 @@ export function exportCollection(): void {
 
   const sources = SOURCES
     .filter(s => sourceIds.has(s.id))
-    .map(s => ({ id: s.id, label: s.label, color: s.color }))
+    .map(s => ({ id: s.id, label: s.label }))
 
   const payload = {
-    version: '1.0',
+    version: '2.0',
     meta: {
       created: new Date().toISOString(),
-      query_history: [...graphStore.queryHistory],
       description: '',
     },
     sources,
-    nodes,
+    items,
   }
 
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `library-graph-${Date.now()}.json`
+  a.download = `library-collection-${Date.now()}.json`
   a.click()
   URL.revokeObjectURL(url)
 }
 
-export function importGraph(data: any): void {
-  const graphStore = useGraphStore()
+export function importCollection(data: any): void {
   const collectionStore = useCollectionStore()
 
-  if (!data.nodes) {
-    alert('Not a valid library graph file.')
+  if (!data.items && !data.nodes) {
+    alert('Not a valid library collection file.')
     return
   }
 
-  graphStore.resetGraph()
   collectionStore.clear()
-  graphStore.importedMode = true
-  graphStore.queryHistory = data.meta?.query_history || []
 
-  const sourceColors: Record<string, string> = {}
-  for (const s of (data.sources || [])) sourceColors[s.id] = s.color
-
-  for (const n of data.nodes) {
-    const color = sourceColors[n.sourceId] || getSource(n.sourceId)?.color || '#888888'
-
-    const node: Node = {
-      id: n.id,
-      label: n.label,
-      type: n.type || 'work',
-      sourceId: n.sourceId,
-      color,
-      result: n.result || null,
-      pinned: collectionStore.items.has(n.id),
-      expanded: false,
-      annotation: n.annotation || '',
-    }
-    graphStore.addNode(node)
+  const items = data.items || data.nodes || []
+  for (const item of items) {
+    collectionStore.pinNode(item.id, {
+      id: item.id,
+      label: item.title || item.label,
+      type: item.type || 'work',
+      sourceId: item.sourceId,
+      annotation: item.annotation || '',
+      result: item.result || null,
+    })
   }
 }
