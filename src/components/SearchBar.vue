@@ -1,6 +1,6 @@
 <template>
     <header
-        class="text-white absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-surface border border-border rounded-[32px] px-2.5 py-1.5 shadow-panel z-[100] min-w-[480px]"
+        class="bg-white absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-surface border border-border rounded-[32px] px-4 py-2 shadow-panel z-[100] min-w-[480px]"
     >
         <Button
             icon="pi pi-folder"
@@ -8,6 +8,7 @@
             text
             severity="secondary"
             title="Show collection"
+            size="small"
             @click="uiStore.toggleCollectionDrawer()"
         />
         <InputText
@@ -17,13 +18,11 @@
             placeholder="Search across libraries…"
             autocomplete="off"
             spellcheck="false"
+            size="small"
             @keydown.enter="performSearch"
         />
-        <Button
-            label="Search"
-            @click="performSearch"
-        />
-        <Button
+        <Button label="Search" @click="performSearch" size="small" />
+        <!-- <Button
             icon="pi pi-bars"
             rounded
             text
@@ -35,7 +34,7 @@
             ref="exportImportMenu"
             :model="exportImportItems"
             :popup="true"
-        />
+        /> -->
     </header>
 
     <input
