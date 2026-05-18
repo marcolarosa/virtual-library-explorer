@@ -1,54 +1,71 @@
-# Library Graph Explorer
+# Library Explorer
 
-Browser-based federated search tool. Queries multiple library/cultural-heritage APIs in parallel and renders results as a live 3D force-directed graph. No build step, no backend, no framework.
+Browser-based federated search tool. Queries multiple library/cultural-heritage APIs in parallel and displays results via an interactive 3D globe and detail panels. Vue 3 + Pinia stores, no build step, no backend framework.
 
 ## Running
 
 ```bash
+npm install
+npm run dev
+# or
 python3 -m http.server 8080
 # open http://localhost:8080
 ```
 
 ## Architecture
 
-Vanilla JS ES modules + `3d-force-graph` (CDN, UMD global `ForceGraph3D`). Single `state` object is the source of truth; graph is a view over it.
+Vue 3 + Pinia (SPA) + Three.js globe. Vite dev server or static HTTP.
 
 ```
-index.html          — shell, CDN script tags, mounts src/main.js
+index.html              — mount point for Vue app
 src/
-  main.js           — entry point, wires all modules together
-  state.js          — singleton state object + localStorage helpers
-  bus.js            — minimal pub/sub (on/emit/off)
-  utils.js          — debounce, ID builders, fetchWithCorsFallback, cache
-  sources.js        — SOURCES registry + all API adapters
-  graph.js          — ForceGraph3D wrapper (add/clear/refresh/zoom)
-  search.js         — search orchestration, JIT expansion, cross-source edge inference
-  collection.js     — pin/unpin, annotations, JSON export/import
-  ui.js             — all panel rendering and DOM event wiring
-styles/main.css     — dark theme, CSS custom properties
+  main.js              — Vue app bootstrap with Pinia
+  App.vue              — root component shell
+  components/
+    GlobeView.vue      — Three.js 3D globe with source anchors
+    SearchBar.vue      — query input, submit
+    SourcePanel.vue    — source selector, API key modal
+    CollectionDrawer.vue — pinned items, export/import
+    DetailPanel.vue    — selected node metadata
+    IframePanel.vue    — external record viewer
+    NodeCapWarning.vue — 500-node limit warning
+  stores/
+    graph.js           — nodes, query history, depth tracking, importedMode
+    collection.js      — pinned items, annotations, localStorage sync
+    sources.js         — source query statuses (status, latency, count, error)
+    ui.js              — selectedNode, panel visibility, searchInProgress
+  services/
+    search.js          — runSearch, expandNode, query/result orchestration
+    collection.js      — pinNode, unpinNode, export/import JSON
+  mapview.js           — Three.js globe setup, raycasting, pulse animations
+  sources.js           — SOURCES registry + all API adapters
+  utils.js             — debounce, ID builders, fetchWithCorsFallback, cache
+styles/main.css        — dark theme, CSS custom properties (Tailwind)
 ```
 
 ## Key conventions
 
-**State** (`src/state.js`): `state.nodes` and `state.edges` are `Map<id, object>`. These are the canonical source of truth; the graph gets a snapshot on each update.
+**State** (Pinia stores): 
+- `useGraphStore.nodes` — `Map<nodeId, node>`, canonical source of truth
+- `useCollectionStore.items` — pinned items with annotations, auto-synced to localStorage
+- `useSourcesStore.statuses` — source query metadata (status/latency/count/error)
+- `useUIStore.*` — selectedNode, panel visibility, searchInProgress
 
-**Adapters** (`src/sources.js`): Every `searchFn` has signature `async ({ query, limit, testing })` — a single options object. Callers pass `{ query }` (e.g. `source.searchFn({ query })`). The body has no implicit globals and can be lifted server-side without rewrites.
+**Nodes**: `<sourceId>::<record-id>` for results, `query::<lowercased-query>` for queries. Each node has `id`, `label`, `type`, `sourceId`, `color`, `depth`, `pinned`, `expanded`, `annotation`, and optional `result` (full record).
 
-**API keys**: Read via getters from `localStorage` (`apiKey:<sourceId>`). Set through the ⚿ keys modal in the UI. Sources with empty keys return `[]` silently. Keyed sources: `trove`, `europeana`, `rijksmuseum`, `dpla`.
+**Adapters** (`src/sources.js`): Every `searchFn` has signature `async ({ query, limit, testing })` — single options object. Callers pass `{ query }`. Body has no implicit globals; can be lifted server-side.
 
-**CORS**: `fetchWithCorsFallback` in `utils.js` tries direct fetch first, then `allorigins.win`, then `corsproxy.io`. Met and LoC have working CORS and never hit the proxy in practice.
+**API keys**: Read from `localStorage` (`apiKey:<sourceId>`). Set through keys modal in SourcePanel. Sources with empty keys return `[]` silently. Keyed sources: `trove`, `europeana`, `rijksmuseum`, `dpla`.
 
-**Cross-source edges**: Inferred after each search/expansion by exact-lowercased string match on `rawSubjects` and `rawCreators`. Stored as `shared-subject` or `shared-creator` edges with `crossSource: true`; rendered with travelling-dot particles.
+**CORS**: `fetchWithCorsFallback` tries direct fetch, then `allorigins.win`, then `corsproxy.io`. Met and LoC have native CORS.
 
-**Node IDs**: `<sourceId>::<record-id>` for results, `query::<lowercased-query>` for query nodes, `source::<sourceId>` for anchors. Same query string from two expansions reuses one query node.
+**Globe interactions**: Three.js raycasting on source anchors (dots + spikes). Click focuses source, mouse hover shows pointer. Pulse animations on query status changes (active = searching, steady = has data).
 
-**Mock sources**: `mock_a` and `mock_b` in `SOURCES` return synthetic data with overlapping subjects/creators, enabling cross-source edge testing without any API keys.
+## Limits
 
-## Limits (v1)
-
-- 500-node soft cap: banner shown, expansion disabled (no clustering)
-- JIT depth limit: 3 hops from any query node
-- Cross-source matching: exact lowercased only (no fuzzy/Levenshtein)
-- New top-level search clears the graph; JIT expansion is additive
-- Imported graphs are expansion-locked (annotations still editable)
+- 500-node soft cap: warning banner shown, expansion blocked
+- Depth limit: 3 hops from root query node
+- JIT expansion: each node can expand to a new query; reuses existing query nodes
+- New top-level search clears graph; expansion is additive
+- Imported graphs are read-only (no new expansions), annotations editable
 - API keys are client-side only — use throwaway dev keys

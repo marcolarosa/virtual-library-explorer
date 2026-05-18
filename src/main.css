@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+/* custom scrollbars — not in Tailwind core */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0f1520;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1e2d42;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #2a3f5a;
+}
+
+/* nested canvas selector — not expressible as a utility */
+#graph-container canvas {
+  display: block;
+}
