@@ -1,0 +1,11 @@
+{
+  "app": "npx ts-node bin/proxy.ts",
+  "context": {
+    "lambdaMemory": 512,
+    "lambdaTimeout": 30,
+    "cloudFrontTtl": 21600,
+    "fetchTimeoutMs": 10000,
+    "responseSizeLimitBytes": 10485760,
+    "concurrencyLimit": 100
+  }
+}

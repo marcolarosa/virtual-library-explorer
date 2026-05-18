@@ -1,0 +1,21 @@
+{
+  "name": "library-explorer-proxy",
+  "version": "1.0.0",
+  "description": "AWS CDK proxy service for library APIs",
+  "main": "lib/proxy-stack.ts",
+  "scripts": {
+    "build": "tsc",
+    "cdk": "cdk",
+    "deploy": "cdk deploy --require-approval=never",
+    "destroy": "cdk destroy --force",
+    "synth": "cdk synth"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.100.0",
+    "constructs": "^10.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}
