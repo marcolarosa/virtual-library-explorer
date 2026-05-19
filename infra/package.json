@@ -12,10 +12,13 @@
   },
   "dependencies": {
     "aws-cdk-lib": "^2.100.0",
+    "cdk": "^2.1122.0",
     "constructs": "^10.0.0"
   },
   "devDependencies": {
+    "@types/aws-lambda": "^8.10.0",
     "@types/node": "^20.0.0",
+    "esbuild": "^0.25.0",
     "typescript": "^5.0.0"
   }
 }

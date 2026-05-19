@@ -5,12 +5,6 @@ interface ProxyRequest {
     sourceIp: string;
 }
 
-interface ProxyResponse {
-    statusCode: number;
-    body: string;
-    headers: Record<string, string>;
-}
-
 const ALLOWED_DOMAINS = (process.env.ALLOWED_DOMAINS || "").split(",").filter(Boolean);
 const FETCH_TIMEOUT_MS = parseInt(process.env.FETCH_TIMEOUT_MS || "10000", 10);
 const RESPONSE_SIZE_LIMIT_BYTES = parseInt(process.env.RESPONSE_SIZE_LIMIT_BYTES || "10485760", 10);
@@ -50,6 +44,15 @@ function logRequest(event: ProxyRequest, statusCode: number, sizeByte: number, l
 export const handler = async (event: APIGatewayProxyEventV2, context: Context): Promise<APIGatewayProxyResultV2> => {
     const startTime = Date.now();
     const sourceIp = event.requestContext.http.sourceIp || "unknown";
+
+    // Reject requests not coming through CloudFront
+    if (event.headers["x-origin-verify"] !== "library-explorer-proxy") {
+        return {
+            statusCode: 403,
+            body: JSON.stringify({ error: "Forbidden" }),
+            headers: { "Content-Type": "application/json" },
+        };
+    }
 
     // Parse the target URL from query parameter
     const targetUrl = event.queryStringParameters?.url;

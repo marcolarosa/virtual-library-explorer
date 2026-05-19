@@ -1,0 +1,311 @@
+{
+  "/LibraryExplorerProxyStack": [
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "<anonymous> (/Users/mlarosa/src/library-explorer/infra/bin/proxy.ts:7:1)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/LibraryExplorerProxyStack/ApiEndpoint": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ApiEndpoint"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "new ProxyStack (/Users/mlarosa/src/library-explorer/infra/lib/proxy-stack.ts:168:9)",
+        "<anonymous> (/Users/mlarosa/src/library-explorer/infra/bin/proxy.ts:7:1)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/LibraryExplorerProxyStack/CloudFrontUrl": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CloudFrontUrl"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "new ProxyStack (/Users/mlarosa/src/library-explorer/infra/lib/proxy-stack.ts:173:9)",
+        "<anonymous> (/Users/mlarosa/src/library-explorer/infra/bin/proxy.ts:7:1)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/LibraryExplorerProxyStack/LambdaFunctionName": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "LambdaFunctionName"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "new ProxyStack (/Users/mlarosa/src/library-explorer/infra/lib/proxy-stack.ts:178:9)",
+        "<anonymous> (/Users/mlarosa/src/library-explorer/infra/bin/proxy.ts:7:1)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/LibraryExplorerProxyStack/BootstrapVersion": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BootstrapVersion"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...App.synth in aws-cdk-lib...",
+        "<anonymous> (/Users/mlarosa/src/library-explorer/infra/bin/proxy.ts:14:5)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/LibraryExplorerProxyStack/CheckBootstrapVersion": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CheckBootstrapVersion"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...App.synth in aws-cdk-lib...",
+        "<anonymous> (/Users/mlarosa/src/library-explorer/infra/bin/proxy.ts:14:5)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/LibraryExplorerProxyStack/ProxyLogs/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ProxyLogs3C0DA2B0"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new LogGroup2 in aws-cdk-lib...",
+        "new ProxyStack (/Users/mlarosa/src/library-explorer/infra/lib/proxy-stack.ts:38:26)",
+        "<anonymous> (/Users/mlarosa/src/library-explorer/infra/bin/proxy.ts:7:1)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/LibraryExplorerProxyStack/ProxyFunction/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ProxyFunction99E5E7D2"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new NodejsFunction in aws-cdk-lib...",
+        "new ProxyStack (/Users/mlarosa/src/library-explorer/infra/lib/proxy-stack.ts:45:32)",
+        "<anonymous> (/Users/mlarosa/src/library-explorer/infra/bin/proxy.ts:7:1)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/LibraryExplorerProxyStack/ProxyApi/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ProxyApi0DF2D7AE"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new HttpApi2 in aws-cdk-lib...",
+        "new ProxyStack (/Users/mlarosa/src/library-explorer/infra/lib/proxy-stack.ts:65:21)",
+        "<anonymous> (/Users/mlarosa/src/library-explorer/infra/bin/proxy.ts:7:1)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/LibraryExplorerProxyStack/ProxyCachePolicy/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ProxyCachePolicy8BE954F9"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new CachePolicy2 in aws-cdk-lib...",
+        "new ProxyStack (/Users/mlarosa/src/library-explorer/infra/lib/proxy-stack.ts:90:30)",
+        "<anonymous> (/Users/mlarosa/src/library-explorer/infra/bin/proxy.ts:7:1)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/LibraryExplorerProxyStack/ProxyDistribution/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ProxyDistribution097772F2"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new Distribution2 in aws-cdk-lib...",
+        "new ProxyStack (/Users/mlarosa/src/library-explorer/infra/lib/proxy-stack.ts:82:30)",
+        "<anonymous> (/Users/mlarosa/src/library-explorer/infra/bin/proxy.ts:7:1)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/LibraryExplorerProxyStack/ProxyDashboard/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ProxyDashboard59C11F7C"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new Dashboard2 in aws-cdk-lib...",
+        "new ProxyStack (/Users/mlarosa/src/library-explorer/infra/lib/proxy-stack.ts:103:27)",
+        "<anonymous> (/Users/mlarosa/src/library-explorer/infra/bin/proxy.ts:7:1)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/LibraryExplorerProxyStack/ProxyAlarmTopic/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ProxyAlarmTopicC1815FD6"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new Topic2 in aws-cdk-lib...",
+        "new ProxyStack (/Users/mlarosa/src/library-explorer/infra/lib/proxy-stack.ts:146:28)",
+        "<anonymous> (/Users/mlarosa/src/library-explorer/infra/bin/proxy.ts:7:1)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/LibraryExplorerProxyStack/ErrorRateAlarm/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ErrorRateAlarm1E0D8C38"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new Alarm2 in aws-cdk-lib...",
+        "new ProxyStack (/Users/mlarosa/src/library-explorer/infra/lib/proxy-stack.ts:155:9)",
+        "<anonymous> (/Users/mlarosa/src/library-explorer/infra/bin/proxy.ts:7:1)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/LibraryExplorerProxyStack/CDKMetadata/Default": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CDKMetadata"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...App.synth in aws-cdk-lib...",
+        "<anonymous> (/Users/mlarosa/src/library-explorer/infra/bin/proxy.ts:14:5)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/LibraryExplorerProxyStack/ProxyFunction/ServiceRole/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ProxyFunctionServiceRole74D3CF07"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new NodejsFunction in aws-cdk-lib...",
+        "new ProxyStack (/Users/mlarosa/src/library-explorer/infra/lib/proxy-stack.ts:45:32)",
+        "<anonymous> (/Users/mlarosa/src/library-explorer/infra/bin/proxy.ts:7:1)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/LibraryExplorerProxyStack/ProxyApi/DefaultStage/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ProxyApiDefaultStageD06917F7"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new HttpApi2 in aws-cdk-lib...",
+        "new ProxyStack (/Users/mlarosa/src/library-explorer/infra/lib/proxy-stack.ts:65:21)",
+        "<anonymous> (/Users/mlarosa/src/library-explorer/infra/bin/proxy.ts:7:1)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/LibraryExplorerProxyStack/ProxyApi/GET--proxy/ProxyIntegration-Permission": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ProxyApiGETproxyProxyIntegrationPermission90C7B3A5"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        ".../Users/mlarosa/src/library-explorer/infra/node_modules/aws-cdk-lib/aws-apigatewayv2/lib/http/api.js:1:96 in aws-cdk-lib...",
+        "Array.map (:)",
+        "...WrappedClass.<anonymous> in aws-cdk-lib...",
+        "new ProxyStack (/Users/mlarosa/src/library-explorer/infra/lib/proxy-stack.ts:75:13)",
+        "<anonymous> (/Users/mlarosa/src/library-explorer/infra/bin/proxy.ts:7:1)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/LibraryExplorerProxyStack/ProxyApi/GET--proxy/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ProxyApiGETproxyCF4129CF"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        ".../Users/mlarosa/src/library-explorer/infra/node_modules/aws-cdk-lib/aws-apigatewayv2/lib/http/api.js:1:96 in aws-cdk-lib...",
+        "Array.map (:)",
+        "...WrappedClass.<anonymous> in aws-cdk-lib...",
+        "new ProxyStack (/Users/mlarosa/src/library-explorer/infra/lib/proxy-stack.ts:75:13)",
+        "<anonymous> (/Users/mlarosa/src/library-explorer/infra/bin/proxy.ts:7:1)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/LibraryExplorerProxyStack/ProxyAlarmTopic/m@lr.id.au/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ProxyAlarmTopicmlridau3C109DAE"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...WrappedClass.addSubscription in aws-cdk-lib...",
+        "new ProxyStack (/Users/mlarosa/src/library-explorer/infra/lib/proxy-stack.ts:151:24)",
+        "<anonymous> (/Users/mlarosa/src/library-explorer/infra/bin/proxy.ts:7:1)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/LibraryExplorerProxyStack/ProxyApi/GET--proxy/ProxyIntegration/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ProxyApiGETproxyProxyIntegration47DC79DB"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        ".../Users/mlarosa/src/library-explorer/infra/node_modules/aws-cdk-lib/aws-apigatewayv2/lib/http/api.js:1:96 in aws-cdk-lib...",
+        "Array.map (:)",
+        "...WrappedClass.<anonymous> in aws-cdk-lib...",
+        "new ProxyStack (/Users/mlarosa/src/library-explorer/infra/lib/proxy-stack.ts:75:13)",
+        "<anonymous> (/Users/mlarosa/src/library-explorer/infra/bin/proxy.ts:7:1)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ]
+}

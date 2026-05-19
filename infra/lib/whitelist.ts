@@ -47,7 +47,7 @@ export function extractAllowedDomains(): string[] {
 export function formatAllowedDomainsEnv(): string {
     const domains = extractAllowedDomains();
     if (domains.length === 0) {
-        throw new Error("No domains found in src/sources.js. Check URL patterns.");
+        throw new Error("No domains found in src/sources/. Check URL patterns.");
     }
     return domains.join(",");
 }

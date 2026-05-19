@@ -6,8 +6,9 @@ const app = new cdk.App();
 
 new ProxyStack(app, "LibraryExplorerProxyStack", {
     env: {
-        region: process.env.AWS_REGION || "us-east-1",
+        region: process.env.AWS_REGION || "ap-southeast-2",
     },
+    alarmEmail: "m@lr.id.au",
 });
 
 app.synth();
