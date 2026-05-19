@@ -27,11 +27,15 @@ function resolvePath(obj, path) {
     return path.match(/[^.[\]]+/g)?.reduce((cur, k) => cur?.[k], obj);
 }
 
-// CloudFront URL is a placeholder (d123abc.cloudfront.net) that MUST be updated
-// in Task 7 after AWS CDK deployment. See docs/superpowers/plans/2026-05-18-aws-proxy-service.md
+// CloudFront proxy deployed to: d2y6w4oov6gtvl.cloudfront.net
+// Production URL configured via VITE_PROXY_URL environment variable (.env.production)
+// Development can override in .env.development
+// Fallback is for dev/emergency only and is intentionally kept as a secondary proxy
+const CLOUDFRONT_URL = import.meta.env.VITE_PROXY_URL || 'https://d2y6w4oov6gtvl.cloudfront.net';
+
 const PROXIES = [
-    (url) => `https://d2y6w4oov6gtvl.cloudfront.net/proxy?url=${encodeURIComponent(url)}`,
-    // Fallback to public proxy if deployment fails
+    (url) => `${CLOUDFRONT_URL}/proxy?url=${encodeURIComponent(url)}`,
+    // Fallback for development/emergency only
     (url) => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
 ];
 
