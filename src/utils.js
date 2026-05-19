@@ -31,12 +31,12 @@ function resolvePath(obj, path) {
 // Production URL configured via VITE_PROXY_URL environment variable (.env.production)
 // Development can override in .env.development
 // Fallback is for dev/emergency only and is intentionally kept as a secondary proxy
-const CLOUDFRONT_URL = import.meta.env.VITE_PROXY_URL || 'https://d2y6w4oov6gtvl.cloudfront.net';
+const CLOUDFRONT_URL = import.meta.env.VITE_PROXY_URL || "https://d2y6w4oov6gtvl.cloudfront.net";
 
 const PROXIES = [
     (url) => `${CLOUDFRONT_URL}/proxy?url=${encodeURIComponent(url)}`,
     // Fallback for development/emergency only
-    (url) => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+    // (url) => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
 ];
 
 const _cache = new Map();
@@ -121,7 +121,7 @@ export async function fetchJsonWithCorsFallback(testing, url, headers, options =
                 lastErr = e;
             }
         }
-        if (!lastErr) lastErr = new Error('No proxies available');
+        if (!lastErr) lastErr = new Error("No proxies available");
         throw lastErr;
     }
 }
