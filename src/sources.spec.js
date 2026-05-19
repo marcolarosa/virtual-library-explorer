@@ -8,12 +8,12 @@ import { SOURCES } from "./sources.js";
 
 describe("SLV", () => {
     it("perform a search for bees", async () => {
-        const result = await slvSearchFn({ query: "bees", limit: 5, testing: true });
+        const result = await slvSearchFn({ query: "bees", limit: 5, testing: false });
         expect(result.docs.length).toBe(5);
     });
 });
 
-describe("Trove", () => {
+describe.only("Trove", () => {
     it("perform a search for bees", async () => {
         const result = await troveSearchFn({ query: "bees", limit: 5, testing: true });
         expect(result.docs.length).toBe(35);

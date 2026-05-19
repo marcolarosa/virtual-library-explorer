@@ -1,6 +1,6 @@
 import { cachedFetch, fetchNextPageData } from "../../utils.js";
 
-export async function dplaSearchFn({ query, testing = false }) {
+async function dplaSearchFn({ query, testing = false }) {
     const DPLA_SCRAPE_MAPPING = {
         dataPath: "searchResults",
         total: "resultCount",
@@ -36,3 +36,22 @@ export async function dplaSearchFn({ query, testing = false }) {
         };
     });
 }
+
+async function nextPageFn(url) {}
+
+async function scrapeFn(url) {}
+
+export const source = {
+    metadata: {
+        id: "dpla",
+        label: "Digital Public Library of America",
+        country: "United States",
+        region: "Americas",
+        enabled: true,
+        lat: 42.4,
+        lng: -71.1,
+    },
+    searchFn: dplaSearchFn,
+    nextPageFn,
+    scrapeFn,
+};

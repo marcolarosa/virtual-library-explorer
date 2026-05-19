@@ -1,6 +1,6 @@
 import { cachedFetch, fetchHtmlAndExtract } from "../../utils.js";
 
-export async function europeanaSearchFn({ query, testing = false }) {
+async function europeanaSearchFn({ query, testing = false }) {
     const EUROPEANA_SCRAPE_MAPPING = {
         container: "div.card-wrapper",
         fields: {
@@ -36,3 +36,22 @@ export async function europeanaSearchFn({ query, testing = false }) {
         };
     });
 }
+
+async function nextPageFn(url) {}
+
+async function scrapeFn(url) {}
+
+export const source = {
+    metadata: {
+        id: "europeana",
+        label: "Europeana",
+        country: "European Union",
+        region: "Europe",
+        enabled: true,
+        lat: 50.8,
+        lng: 4.4,
+    },
+    searchFn: europeanaSearchFn,
+    nextPageFn,
+    scrapeFn,
+};
