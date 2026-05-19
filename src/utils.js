@@ -28,8 +28,9 @@ function resolvePath(obj, path) {
 }
 
 const PROXIES = [
+    (url) => `https://d123abc.cloudfront.net/proxy?url=${encodeURIComponent(url)}`,
+    // Fallback to public proxy if deployment fails
     (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
-    // (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
 ];
 
 const _cache = new Map();
