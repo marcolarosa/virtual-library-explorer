@@ -30,7 +30,7 @@ function resolvePath(obj, path) {
 // CloudFront URL is a placeholder (d123abc.cloudfront.net) that MUST be updated
 // in Task 7 after AWS CDK deployment. See docs/superpowers/plans/2026-05-18-aws-proxy-service.md
 const PROXIES = [
-    (url) => `https://d123abc.cloudfront.net/proxy?url=${encodeURIComponent(url)}`,
+    (url) => `https://d2y6w4oov6gtvl.cloudfront.net/proxy?url=${encodeURIComponent(url)}`,
     // Fallback to public proxy if deployment fails
     (url) => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
 ];
