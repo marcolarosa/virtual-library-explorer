@@ -1,5 +1,6 @@
 import * as cdk from "aws-cdk-lib";
 import * as lambda from "aws-cdk-lib/aws-lambda";
+import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import * as apigateway from "aws-cdk-lib/aws-apigatewayv2";
 import * as apigatewayIntegrations from "aws-cdk-lib/aws-apigatewayv2-integrations";
 import * as cloudfront from "aws-cdk-lib/aws-cloudfront";
@@ -11,7 +12,6 @@ import * as sns from "aws-cdk-lib/aws-sns";
 import * as subscriptions from "aws-cdk-lib/aws-sns-subscriptions";
 import { Construct } from "constructs";
 import { formatAllowedDomainsEnv } from "./whitelist";
-import * as fs from "fs";
 import * as path from "path";
 
 export interface ProxyStackProps extends cdk.StackProps {
@@ -20,7 +20,8 @@ export interface ProxyStackProps extends cdk.StackProps {
     cloudFrontTtl?: number;
     fetchTimeoutMs?: number;
     responseSizeLimitBytes?: number;
-    concurrencyLimit?: number;
+
+    alarmEmail?: string;
 }
 
 export class ProxyStack extends cdk.Stack {
@@ -32,28 +33,19 @@ export class ProxyStack extends cdk.Stack {
         const cloudFrontTtlSec = props?.cloudFrontTtl || 21600; // 6 hours
         const fetchTimeoutMs = props?.fetchTimeoutMs || 10000;
         const responseSizeLimitBytes = props?.responseSizeLimitBytes || 10485760;
-        const concurrencyLimit = props?.concurrencyLimit || 100;
 
         // CloudWatch log group
         const logGroup = new logs.LogGroup(this, "ProxyLogs", {
             logGroupName: "/aws/lambda/library-explorer-proxy",
             retention: logs.RetentionDays.ONE_MONTH,
+            removalPolicy: cdk.RemovalPolicy.DESTROY,
         });
 
         // Lambda function
-        const lambdaFunction = new lambda.Function(this, "ProxyFunction", {
+        const lambdaFunction = new NodejsFunction(this, "ProxyFunction", {
             runtime: lambda.Runtime.NODEJS_20_X,
-            handler: "index.handler",
-            code: lambda.Code.fromAsset(path.join(__dirname, "lambda"), {
-                bundling: {
-                    image: lambda.Runtime.NODEJS_20_X.bundlingImage,
-                    command: [
-                        "bash",
-                        "-c",
-                        "npx esbuild index.ts --bundle --platform=node --target=node20 --outfile=/asset-output/index.js",
-                    ],
-                },
-            }),
+            entry: path.join(__dirname, "lambda/index.ts"),
+            handler: "handler",
             memorySize: lambdaMemory,
             timeout: cdk.Duration.seconds(lambdaTimeoutSec),
             logGroup,
@@ -62,7 +54,11 @@ export class ProxyStack extends cdk.Stack {
                 FETCH_TIMEOUT_MS: fetchTimeoutMs.toString(),
                 RESPONSE_SIZE_LIMIT_BYTES: responseSizeLimitBytes.toString(),
             },
-            reservedConcurrentExecutions: concurrencyLimit,
+
+            bundling: {
+                target: "node20",
+                forceDockerBundling: false,
+            },
         });
 
         // API Gateway HTTP API
@@ -122,7 +118,7 @@ export class ProxyStack extends cdk.Stack {
                 title: "Lambda Duration (p50, p95, p99)",
                 left: [
                     lambdaFunction.metricDuration({
-                        statistic: "Average",
+                        statistic: "p50",
                         period: cdk.Duration.minutes(5),
                     }),
                     lambdaFunction.metricDuration({
@@ -151,6 +147,10 @@ export class ProxyStack extends cdk.Stack {
             displayName: "Library Explorer Proxy Alarms",
         });
 
+        if (props?.alarmEmail) {
+            alarmTopic.addSubscription(new subscriptions.EmailSubscription(props.alarmEmail));
+        }
+
         // Alarm: Error rate > 5% in 5 minutes
         new cloudwatch.Alarm(this, "ErrorRateAlarm", {
             metric: lambdaFunction.metricErrors({
@@ -161,6 +161,24 @@ export class ProxyStack extends cdk.Stack {
             evaluationPeriods: 1,
             alarmDescription: "Lambda error rate exceeded 5%",
             alarmName: "library-explorer-proxy-errors",
+            treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+        }).addAlarmAction(new cloudwatchActions.SnsAction(alarmTopic));
+
+        // Alarm: Concurrent executions approaching limit
+        new cloudwatch.Alarm(this, "ConcurrencyAlarm", {
+            metric: new cloudwatch.Metric({
+                namespace: "AWS/Lambda",
+                metricName: "ConcurrentExecutions",
+                dimensionsMap: {
+                    FunctionName: lambdaFunction.functionName,
+                },
+                statistic: "Maximum",
+                period: cdk.Duration.minutes(1),
+            }),
+            threshold: 80,  // Alert at 80% of 100 reserved concurrent executions
+            evaluationPeriods: 1,
+            alarmDescription: "Lambda concurrency approaching limit (80/100)",
+            alarmName: "library-explorer-proxy-concurrency",
             treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
         }).addAlarmAction(new cloudwatchActions.SnsAction(alarmTopic));
 
