@@ -12,6 +12,7 @@ dist/
 build/
 out/
 .cache/
+infra/cdk.out/
 
 # Environment / secrets
 .env
