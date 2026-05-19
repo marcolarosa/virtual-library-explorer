@@ -152,12 +152,15 @@ export class ProxyStack extends cdk.Stack {
         }
 
         // Alarm: Error rate > 5% in 5 minutes
+        // Assumes ~1000 requests/5min; 50 errors = 5% error rate
+        // Adjust threshold based on expected traffic volume. For higher traffic, increase threshold proportionally.
+        // Example: For ~2000 requests/5min, set threshold to 100 (still 5%)
         new cloudwatch.Alarm(this, "ErrorRateAlarm", {
             metric: lambdaFunction.metricErrors({
                 statistic: "Sum",
                 period: cdk.Duration.minutes(5),
             }),
-            threshold: 50, // Rough estimate; adjust based on traffic
+            threshold: 50,
             evaluationPeriods: 1,
             alarmDescription: "Lambda error rate exceeded 5%",
             alarmName: "library-explorer-proxy-errors",
@@ -179,6 +182,19 @@ export class ProxyStack extends cdk.Stack {
             evaluationPeriods: 1,
             alarmDescription: "Lambda concurrency approaching limit (80/100)",
             alarmName: "library-explorer-proxy-concurrency",
+            treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+        }).addAlarmAction(new cloudwatchActions.SnsAction(alarmTopic));
+
+        // Alarm: Invocation spike (cost control)
+        new cloudwatch.Alarm(this, "InvocationRateAlarm", {
+            metric: lambdaFunction.metricInvocations({
+                statistic: "Sum",
+                period: cdk.Duration.minutes(1),
+            }),
+            threshold: 1000,
+            evaluationPeriods: 1,
+            alarmDescription: "Lambda invocation spike detected (>1000 per minute)",
+            alarmName: "library-explorer-proxy-invocations",
             treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
         }).addAlarmAction(new cloudwatchActions.SnsAction(alarmTopic));
 

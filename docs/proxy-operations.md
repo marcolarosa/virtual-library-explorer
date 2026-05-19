@@ -32,18 +32,70 @@ Typical cost breakdown:
 
 ## CloudWatch Alarms
 
-Two alarms are configured to monitor the proxy service:
+Three alarms are configured to monitor the proxy service:
 
 ### 1. Error Rate Alarm
 - **Name**: `library-explorer-proxy-errors`
 - **Trigger**: Sum of errors >= 50 in a 5-minute period
 - **Action**: SNS notification to operations team
+- **Threshold Details**: Assumes ~1000 requests per 5 minutes; 50 errors = 5% error rate
 
 ### 2. Concurrency Alarm
 - **Name**: `library-explorer-proxy-concurrency`
 - **Trigger**: Maximum concurrent executions > 80 in a 60-second period
 - **Action**: SNS notification to operations team
 - **Lambda Reserved Concurrency**: Set to 100 to prevent throttling
+
+### 3. Invocation Rate Alarm
+- **Name**: `library-explorer-proxy-invocations`
+- **Trigger**: Sum of invocations > 1000 in a 1-minute period
+- **Action**: SNS notification to operations team
+- **Purpose**: Cost control; detects usage spikes that may indicate DoS or unexpected traffic surge
+
+## Alarm Thresholds & Adjustment
+
+### Error Rate Alarm
+The threshold of 50 errors assumes approximately 1000 requests within a 5-minute evaluation period, yielding a 5% error rate. To adjust this threshold:
+
+1. **Estimate your baseline traffic**: Check CloudWatch Logs or dashboard for typical requests per 5 minutes
+2. **Calculate new threshold**: `baseline_requests × 0.05` (for 5% error rate)
+3. **Update threshold in `infra/lib/proxy-stack.ts`**: Change line 160 `threshold: 50` to your calculated value
+4. **Redeploy**: `cd infra && npm run deploy`
+
+Example: If you expect ~2000 requests per 5 minutes, set threshold to 100 to maintain 5% error rate.
+
+### Invocation Rate Alarm
+The 1000 invocations per minute threshold is set to catch unusual traffic spikes. Adjust based on expected baseline:
+
+1. **Review CloudWatch dashboard** for typical peak invocation rates
+2. **Set threshold at ~120% of peak**: This prevents alert fatigue while catching real anomalies
+3. **Update threshold in `infra/lib/proxy-stack.ts`**: Change line 200 `threshold: 1000` to your value
+
+### Concurrency Alarm
+The 80 concurrent execution threshold is 80% of the reserved concurrency limit (100). To adjust:
+
+1. **Change reserved concurrency**: Increase via Lambda console or `infra/lib/proxy-stack.ts` line 178
+2. **Update alarm threshold**: Keep at 80% of your new reserved concurrency limit
+3. **Redeploy**: `cd infra && npm run deploy`
+
+## Setting Up Email Notifications (SNS)
+
+To receive email notifications for alarms:
+
+1. Go to AWS SNS console: https://console.aws.amazon.com/sns/
+2. In the left sidebar, click **Topics**
+3. Find the topic with name matching `LibraryExplorerProxyStack-ProxyAlarmTopic*` (use Ctrl+F to search)
+4. Click on the topic name to open it
+5. Click **Create subscription**
+6. Select **Protocol**: Email
+7. Enter your **Endpoint**: your-email@example.com
+8. Click **Create subscription**
+9. Check your email for a confirmation message from AWS SNS
+10. Click the **Confirm subscription** link in the email
+
+Once confirmed, you will receive email notifications immediately when any alarm triggers.
+
+**Note**: If you don't see the confirmation email, check your spam folder or verify the email address is correct.
 
 ## Cost Control Strategy
 
