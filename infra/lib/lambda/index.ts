@@ -24,7 +24,13 @@ function isDomainAllowed(url: string): boolean {
 /**
  * Logs a request to CloudWatch in JSON format.
  */
-function logRequest(event: ProxyRequest, statusCode: number, sizeByte: number, latencyMs: number, error: string | null): void {
+function logRequest(
+    event: ProxyRequest,
+    statusCode: number,
+    sizeByte: number,
+    latencyMs: number,
+    error: string | null,
+): void {
     const logEntry = {
         timestamp: new Date().toISOString(),
         sourceIp: event.sourceIp,
@@ -41,7 +47,10 @@ function logRequest(event: ProxyRequest, statusCode: number, sizeByte: number, l
 /**
  * Lambda handler for the proxy service.
  */
-export const handler = async (event: APIGatewayProxyEventV2, context: Context): Promise<APIGatewayProxyResultV2> => {
+export const handler = async (
+    event: APIGatewayProxyEventV2,
+    context: Context,
+): Promise<APIGatewayProxyResultV2> => {
     const startTime = Date.now();
     const sourceIp = event.requestContext.http.sourceIp || "unknown";
 
@@ -57,7 +66,13 @@ export const handler = async (event: APIGatewayProxyEventV2, context: Context): 
     // Parse the target URL from query parameter
     const targetUrl = event.queryStringParameters?.url;
     if (!targetUrl) {
-        logRequest({ targetUrl: "", sourceIp }, 400, 0, Date.now() - startTime, "Missing url parameter");
+        logRequest(
+            { targetUrl: "", sourceIp },
+            400,
+            0,
+            Date.now() - startTime,
+            "Missing url parameter",
+        );
         return {
             statusCode: 400,
             body: JSON.stringify({ error: "Missing or invalid 'url' query parameter" }),
@@ -100,7 +115,13 @@ export const handler = async (event: APIGatewayProxyEventV2, context: Context): 
         // Check size limit
         if (responseSize > RESPONSE_SIZE_LIMIT_BYTES) {
             const latency = Date.now() - startTime;
-            logRequest({ targetUrl, sourceIp }, 413, responseSize, latency, "Response exceeds size limit");
+            logRequest(
+                { targetUrl, sourceIp },
+                413,
+                responseSize,
+                latency,
+                "Response exceeds size limit",
+            );
             return {
                 statusCode: 413,
                 body: JSON.stringify({ error: "Response too large" }),
@@ -112,11 +133,22 @@ export const handler = async (event: APIGatewayProxyEventV2, context: Context): 
         const latency = Date.now() - startTime;
         logRequest({ targetUrl, sourceIp }, response.status, responseSize, latency, null);
 
+        const headersToOmit = new Set([
+            "content-encoding",
+            "transfer-encoding",
+            "content-length",
+            "connection",
+        ]);
+        const forwardedHeaders = Object.fromEntries(
+            Array.from(response.headers).filter(([key]) => !headersToOmit.has(key.toLowerCase())),
+        );
+
         return {
             statusCode: response.status,
             body: responseBody,
             headers: {
-                ...Object.fromEntries(response.headers),
+                ...forwardedHeaders,
+                "Content-Length": String(Buffer.byteLength(responseBody)),
                 "Access-Control-Allow-Origin": "*",
                 "Access-Control-Allow-Methods": "GET, HEAD",
                 "Access-Control-Allow-Headers": "Content-Type",
@@ -124,7 +156,8 @@ export const handler = async (event: APIGatewayProxyEventV2, context: Context): 
         };
     } catch (error: any) {
         const latency = Date.now() - startTime;
-        const errorMessage = error?.name === "AbortError" ? "Request timeout" : error?.message || "Unknown error";
+        const errorMessage =
+            error?.name === "AbortError" ? "Request timeout" : error?.message || "Unknown error";
         logRequest({ targetUrl, sourceIp }, 504, 0, latency, errorMessage);
 
         return {
