@@ -27,10 +27,12 @@ function resolvePath(obj, path) {
     return path.match(/[^.[\]]+/g)?.reduce((cur, k) => cur?.[k], obj);
 }
 
+// CloudFront URL is a placeholder (d123abc.cloudfront.net) that MUST be updated
+// in Task 7 after AWS CDK deployment. See docs/superpowers/plans/2026-05-18-aws-proxy-service.md
 const PROXIES = [
     (url) => `https://d123abc.cloudfront.net/proxy?url=${encodeURIComponent(url)}`,
     // Fallback to public proxy if deployment fails
-    (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+    (url) => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
 ];
 
 const _cache = new Map();
@@ -115,6 +117,8 @@ export async function fetchJsonWithCorsFallback(testing, url, headers, options =
                 lastErr = e;
             }
         }
+        if (!lastErr) lastErr = new Error('No proxies available');
+        throw lastErr;
     }
 }
 
