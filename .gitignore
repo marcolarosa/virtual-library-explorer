@@ -13,6 +13,7 @@ build/
 out/
 .cache/
 infra/cdk.out/
+infra/lib/lambda/allowed-domains.ts
 
 # Environment / secrets
 .env

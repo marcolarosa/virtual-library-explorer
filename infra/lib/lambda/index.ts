@@ -1,11 +1,11 @@
 import { APIGatewayProxyEventV2, APIGatewayProxyResultV2, Context } from "aws-lambda";
+import { ALLOWED_DOMAINS } from "./allowed-domains";
 
 interface ProxyRequest {
     targetUrl: string;
     sourceIp: string;
 }
 
-const ALLOWED_DOMAINS = (process.env.ALLOWED_DOMAINS || "").split(",").filter(Boolean);
 const FETCH_TIMEOUT_MS = parseInt(process.env.FETCH_TIMEOUT_MS || "10000", 10);
 const RESPONSE_SIZE_LIMIT_BYTES = parseInt(process.env.RESPONSE_SIZE_LIMIT_BYTES || "10485760", 10);
 

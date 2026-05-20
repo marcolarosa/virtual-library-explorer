@@ -11,8 +11,8 @@ import * as cloudwatchActions from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as sns from "aws-cdk-lib/aws-sns";
 import * as subscriptions from "aws-cdk-lib/aws-sns-subscriptions";
 import { Construct } from "constructs";
-import { formatAllowedDomainsEnv } from "./whitelist";
 import * as path from "path";
+import { writeAllowedDomainsFile } from "./generate-allowed-domains";
 
 export interface ProxyStackProps extends cdk.StackProps {
     lambdaMemory?: number;
@@ -34,6 +34,10 @@ export class ProxyStack extends cdk.Stack {
         const fetchTimeoutMs = props?.fetchTimeoutMs || 10000;
         const responseSizeLimitBytes = props?.responseSizeLimitBytes || 10485760;
 
+        // Generate allowed domains at build time
+        const allowedDomainsFile = path.join(__dirname, "lambda/allowed-domains.ts");
+        writeAllowedDomainsFile(allowedDomainsFile);
+
         // CloudWatch log group
         const logGroup = new logs.LogGroup(this, "ProxyLogs", {
             logGroupName: "/aws/lambda/library-explorer-proxy",
@@ -50,7 +54,6 @@ export class ProxyStack extends cdk.Stack {
             timeout: cdk.Duration.seconds(lambdaTimeoutSec),
             logGroup,
             environment: {
-                ALLOWED_DOMAINS: formatAllowedDomainsEnv(),
                 FETCH_TIMEOUT_MS: fetchTimeoutMs.toString(),
                 RESPONSE_SIZE_LIMIT_BYTES: responseSizeLimitBytes.toString(),
             },

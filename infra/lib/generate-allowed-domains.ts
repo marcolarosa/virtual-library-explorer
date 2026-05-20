@@ -2,14 +2,13 @@ import * as fs from "fs";
 import * as path from "path";
 
 /**
- * Extracts allowed domains from all source files in src/sources/.
- * Scans all implementation files and collects unique domains from URLs.
+ * Generates allowed domains from source files by executing their module code
+ * and extracting URLs found in the source files.
  */
-export function extractAllowedDomains(): string[] {
+export function generateAllowedDomains(): string[] {
     const sourcesDir = path.join(__dirname, "../../src/sources");
     const domains = new Set<string>();
 
-    // Recursively find all .js files in src/sources/
     function walkDir(dir: string): void {
         const files = fs.readdirSync(dir);
         for (const file of files) {
@@ -19,8 +18,8 @@ export function extractAllowedDomains(): string[] {
                 walkDir(fullPath);
             } else if (file.endsWith(".js")) {
                 const content = fs.readFileSync(fullPath, "utf-8");
-                // Find all https:// URLs in the file
-                const urlPattern = /https:\/\/[^\s"'`<>${]+/g;
+                // Extract all https:// URLs from the source file
+                const urlPattern = /https:\/\/[^\s"'`<>{}$]+/g;
                 let match;
                 while ((match = urlPattern.exec(content)) !== null) {
                     try {
@@ -38,20 +37,25 @@ export function extractAllowedDomains(): string[] {
     }
 
     walkDir(sourcesDir);
-    return Array.from(domains).sort();
+    const sorted = Array.from(domains).sort();
+
+    if (sorted.length === 0) {
+        throw new Error("No domains found in src/sources/. Ensure source files contain API URLs.");
+    }
+
+    return sorted;
 }
 
 /**
- * Formats allowed domains as a comma-separated string for Lambda env var.
+ * Generates the allowed-domains.ts file for import by the Lambda function.
  */
-export function formatAllowedDomainsEnv(): string {
-    const domains = extractAllowedDomains();
-    if (domains.length === 0) {
-        throw new Error("No domains found in src/sources/. Check URL patterns.");
-    }
-    return domains.join(",");
-}
-
-if (require.main === module) {
-    console.log("Allowed domains:", extractAllowedDomains());
+export function writeAllowedDomainsFile(outputPath: string): void {
+    const domains = generateAllowedDomains();
+    const content = `// Auto-generated at build time. Do not edit manually.
+export const ALLOWED_DOMAINS = [
+${domains.map((d) => `  "${d}",`).join("\n")}
+];
+`;
+    fs.writeFileSync(outputPath, content, "utf-8");
+    console.log(`Generated ${outputPath} with ${domains.length} domains`);
 }
