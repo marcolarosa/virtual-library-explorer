@@ -10,15 +10,22 @@
     "destroy": "cdk destroy --force",
     "synth": "cdk synth"
   },
+  "nodemonConfig": {
+    "watch": ["lib/lambda"],
+    "ext": "ts",
+    "exec": "npm run build",
+    "quiet": true
+  },
   "dependencies": {
     "aws-cdk-lib": "^2.100.0",
     "cdk": "^2.1122.0",
     "constructs": "^10.0.0",
-    "dotenv": "^17.4.2"
+    "dotenv": "^17.4.2",
+    "nodemon": "^3.1.14"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.0",
-    "@types/node": "^20.0.0",
+    "@types/node": "^20.19.41",
     "esbuild": "^0.25.0",
     "typescript": "^5.0.0"
   }
