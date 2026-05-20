@@ -14,7 +14,7 @@
   "nodemonConfig": {
     "watch": ["lib/lambda"],
     "ext": "ts",
-    "exec": "npm run build",
+    "exec": "bash rebuild-lambda.sh",
     "quiet": true,
     "delay": 1000
   },

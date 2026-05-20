@@ -67,6 +67,9 @@ else
     echo -e "${YELLOW}⚠️  Warning: Unsupported OS type ($OSTYPE). Using default Docker socket.${NC}"
 fi
 
+# Initialize SAM_PID for rebuild script
+export SAM_PID=""
+
 echo -e "${GREEN}✅ Prerequisites OK${NC}"
 echo ""
 
@@ -89,6 +92,7 @@ sam local start-api \
     --port 3000 \
     --host 127.0.0.1 &
 sam_pid=$!
+export SAM_PID=$sam_pid
 
 # Cleanup function to kill both background processes on exit
 # This must be set AFTER both process IDs are captured to avoid race condition
@@ -98,5 +102,22 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-# Wait for both processes (will exit on Ctrl+C via trap)
-wait
+# Wait for processes, restart SAM if it exits unexpectedly
+while true; do
+    if ! kill -0 $sam_pid 2>/dev/null; then
+        echo -e "${YELLOW}SAM exited, restarting...${NC}"
+        sam local start-api \
+            --template "$TEMPLATE_FILE" \
+            --port 3000 \
+            --host 127.0.0.1 &
+        sam_pid=$!
+        export SAM_PID=$sam_pid
+    fi
+
+    if ! kill -0 $nodemon_pid 2>/dev/null; then
+        echo -e "${YELLOW}nodemon exited, stopping...${NC}"
+        break
+    fi
+
+    sleep 2
+done
