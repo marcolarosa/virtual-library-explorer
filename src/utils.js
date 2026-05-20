@@ -34,7 +34,7 @@ function resolvePath(obj, path) {
 const CLOUDFRONT_URL = import.meta.env.VITE_PROXY_URL || "https://d2y6w4oov6gtvl.cloudfront.net";
 
 const PROXIES = [
-    (url) => `${CLOUDFRONT_URL}/proxy?url=${encodeURIComponent(url)}`,
+    (url) => `${CLOUDFRONT_URL}?url=${encodeURIComponent(url)}`,
     // Fallback for development/emergency only
     // (url) => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
 ];
@@ -66,7 +66,7 @@ function getPathValue(obj, path) {
 // total:   (data) => number => optional; extracts total result count from response
 // items:   (data) => array  — extracts the results array from the response
 // mapDict: { key: "dot.path[0]" | ["dot.path[0]", default] | (item) => value }
-export async function search({ testing, sourceId, url, headers, query, total, items, mapDict }) {
+export async function search({ sourceId, url, headers, query, total, items, mapDict }) {
     const key = `${sourceId}::${query}`;
     const mapFn = (item) =>
         Object.fromEntries(
@@ -77,7 +77,7 @@ export async function search({ testing, sourceId, url, headers, query, total, it
             }),
         );
     return cachedFetch(key, async () => {
-        const { data } = await fetchJsonWithCorsFallback(testing, url, headers);
+        const { data } = await fetchJsonWithCorsFallback(url, headers);
         const docs = (items(data) || []).map(mapFn);
         const result = { docs };
         if (total) result.total = total(data);
@@ -102,54 +102,46 @@ function extractFromPageProps(pageProps, mapping) {
 }
 
 /** Fetches JSON via CORS proxy if needed. In testing mode, tries direct fetch. Returns {data, proxyUsed}. */
-export async function fetchJsonWithCorsFallback(testing, url, headers, options = {}) {
+export async function fetchJsonWithCorsFallback(url, headers, options = {}) {
+    headers = { ...headers, "x-origin-verify": "library-explorer-proxy" };
     let lastErr;
-    if (testing) {
-        const resp = await fetch(url, { headers, signal: AbortSignal.timeout(12000) });
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-        return { data: await resp.json(), proxyUsed: false };
-    } else {
-        for (const makeProxy of PROXIES) {
-            try {
-                const resp = await fetch(makeProxy(url), {
-                    headers,
-                    signal: AbortSignal.timeout(12000),
-                });
-                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-                return { data: await resp.json(), proxyUsed: true };
-            } catch (e) {
-                lastErr = e;
-            }
+    for (const makeProxy of PROXIES) {
+        try {
+            const resp = await fetch(makeProxy(url, headers), {
+                headers,
+                signal: AbortSignal.timeout(12000),
+            });
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            return { data: await resp.json(), proxyUsed: true };
+        } catch (e) {
+            lastErr = e;
         }
-        if (!lastErr) lastErr = new Error("No proxies available");
-        throw lastErr;
     }
+    if (!lastErr) lastErr = new Error("No proxies available");
+    throw lastErr;
 }
 
 /** Fetches HTML and extracts data using CSS selectors. Returns {docs, total}. */
-export async function fetchHtmlAndExtract(testing, url, mapping) {
+export async function fetchHtmlAndExtract(url, mapping) {
     const headers = {
         "User-Agent":
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "x-origin-verify": "library-explorer-proxy",
     };
     let resp;
-    if (testing) {
-        resp = await fetch(url, { headers, signal: AbortSignal.timeout(12000) });
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    } else {
-        let lastErr;
-        for (const makeProxy of PROXIES) {
-            try {
-                resp = await fetch(makeProxy(url), { headers, signal: AbortSignal.timeout(12000) });
-                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-                break;
-            } catch (e) {
-                lastErr = e;
-            }
+    let lastErr;
+    for (const makeProxy of PROXIES) {
+        try {
+            resp = await fetch(makeProxy(url), { headers, signal: AbortSignal.timeout(12000) });
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            break;
+        } catch (e) {
+            lastErr = e;
         }
-        if (!resp) throw lastErr;
     }
+    if (!resp) throw lastErr;
+
     const html = await resp.text();
     let doc;
     if (typeof DOMParser !== "undefined") {
@@ -186,30 +178,26 @@ export async function fetchHtmlAndExtract(testing, url, mapping) {
 }
 
 /** Fetches and parses Next.js page data, extracting items using the provided mapping. Returns {docs, total, nextData}. */
-export async function fetchNextPageData(testing, url, mapping) {
+export async function fetchNextPageData(url, mapping) {
     const headers = {
         "User-Agent":
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "x-origin-verify": "library-explorer-proxy",
     };
 
     let resp;
-    if (testing) {
-        resp = await fetch(url, { headers, signal: AbortSignal.timeout(12000) });
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    } else {
-        let lastErr;
-        for (const makeProxy of PROXIES) {
-            try {
-                resp = await fetch(makeProxy(url), { headers, signal: AbortSignal.timeout(12000) });
-                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-                break;
-            } catch (e) {
-                lastErr = e;
-            }
+    let lastErr;
+    for (const makeProxy of PROXIES) {
+        try {
+            resp = await fetch(makeProxy(url), { headers, signal: AbortSignal.timeout(12000) });
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            break;
+        } catch (e) {
+            lastErr = e;
         }
-        if (!resp) throw lastErr;
     }
+    if (!resp) throw lastErr;
 
     const html = await resp.text();
 
@@ -218,7 +206,6 @@ export async function fetchNextPageData(testing, url, mapping) {
     if (!match) throw new Error("__NEXT_DATA__ not found");
 
     const nextData = JSON.parse(match[1]);
-    console.log(nextData);
     const pageProps = nextData.props?.pageProps || {};
 
     const docs = extractFromPageProps(pageProps, mapping);

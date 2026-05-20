@@ -8,15 +8,7 @@
     "cdk": "cdk",
     "deploy": "cdk deploy --require-approval=never",
     "destroy": "cdk destroy --force",
-    "synth": "cdk synth",
-    "watch": "nodemon"
-  },
-  "nodemonConfig": {
-    "watch": ["lib/lambda"],
-    "ext": "ts",
-    "exec": "bash rebuild-lambda.sh",
-    "quiet": true,
-    "delay": 1000
+    "synth": "cdk synth"
   },
   "dependencies": {
     "aws-cdk-lib": "^2.100.0",
@@ -28,7 +20,6 @@
     "@types/aws-lambda": "^8.10.0",
     "@types/node": "^20.19.41",
     "esbuild": "^0.25.0",
-    "nodemon": "^3.1.14",
     "typescript": "^5.0.0"
   }
 }

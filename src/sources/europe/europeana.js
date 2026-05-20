@@ -14,11 +14,7 @@ async function europeanaSearchFn({ query, testing = false }) {
     const url = `https://www.europeana.eu/en/search?page=1&view=list&query=${query}`;
     const key = `europeana::${query}`;
     return cachedFetch(key, async () => {
-        const { docs: raw, total } = await fetchHtmlAndExtract(
-            testing,
-            url,
-            EUROPEANA_SCRAPE_MAPPING,
-        );
+        const { docs: raw, total } = await fetchHtmlAndExtract(url, EUROPEANA_SCRAPE_MAPPING);
         return {
             docs: raw.map((item) => ({
                 id: `europeana::${encodeURIComponent(item.url || item.title)}`,

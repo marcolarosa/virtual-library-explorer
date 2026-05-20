@@ -6,5 +6,6 @@
       "Bash(node -c src/sources.js)",
       "Bash(curl -L -o assets/world-map.png \"https://upload.wikimedia.org/wikipedia/commons/thumb/2/20/Equirectangular_projection_-_main.jpg/4096px-Equirectangular_projection_-_main.jpg\")"
     ]
-  }
+  },
+  "spinnerTipsEnabled": false
 }

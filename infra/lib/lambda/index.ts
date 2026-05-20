@@ -1,146 +1,111 @@
-import { APIGatewayProxyEventV2, APIGatewayProxyResultV2, Context } from "aws-lambda";
+import { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from "aws-lambda";
 import { ALLOWED_DOMAINS } from "./allowed-domains";
-
-interface ProxyRequest {
-    targetUrl: string;
-    sourceIp: string;
-}
 
 const FETCH_TIMEOUT_MS = parseInt(process.env.FETCH_TIMEOUT_MS || "10000", 10);
 const RESPONSE_SIZE_LIMIT_BYTES = parseInt(process.env.RESPONSE_SIZE_LIMIT_BYTES || "10485760", 10);
 
-/**
- * Validates that the target URL domain is in the whitelist.
- */
+const HEADERS_TO_OMIT = new Set([
+    "content-encoding",
+    "transfer-encoding",
+    "content-length",
+    "connection",
+]);
+
 function isDomainAllowed(url: string): boolean {
     try {
-        const targetDomain = new URL(url).hostname;
-        return ALLOWED_DOMAINS.includes(targetDomain);
-    } catch (e) {
+        return ALLOWED_DOMAINS.includes(new URL(url).hostname);
+    } catch {
         return false;
     }
 }
 
-/**
- * Logs a request to CloudWatch in JSON format.
- */
 function logRequest(
-    event: ProxyRequest,
+    sourceIp: string,
+    targetUrl: string,
     statusCode: number,
-    sizeByte: number,
+    responseSize: number,
     latencyMs: number,
-    error: string | null,
+    error: string | null = null,
 ): void {
-    const logEntry = {
-        timestamp: new Date().toISOString(),
-        sourceIp: event.sourceIp,
-        targetUrl: event.targetUrl,
-        statusCode,
-        responseSizeBytes: sizeByte,
-        latencyMs,
-        cached: false,
-        error,
-    };
-    console.log(JSON.stringify(logEntry));
+    console.log(
+        JSON.stringify({
+            timestamp: new Date().toISOString(),
+            sourceIp,
+            targetUrl,
+            statusCode,
+            responseSizeBytes: responseSize,
+            latencyMs,
+            error,
+        }),
+    );
 }
 
-/**
- * Lambda handler for the proxy service.
- */
-export const handler = async (
-    event: APIGatewayProxyEventV2,
-    context: Context,
-): Promise<APIGatewayProxyResultV2> => {
+function errorResponse(statusCode: number, message: string): APIGatewayProxyResultV2 {
+    return {
+        statusCode,
+        body: JSON.stringify({ error: message }),
+        headers: { "Content-Type": "application/json" },
+    };
+}
+
+export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> => {
     const startTime = Date.now();
     const sourceIp = event.requestContext.http.sourceIp || "unknown";
+    const latency = () => Date.now() - startTime;
 
-    // Reject requests not coming through CloudFront
-    if (event.headers["x-origin-verify"] !== "library-explorer-proxy") {
-        return {
-            statusCode: 403,
-            body: JSON.stringify({ error: "Forbidden" }),
-            headers: { "Content-Type": "application/json" },
-        };
+    // Verify CloudFront origin
+    const hasValidOrigin = Object.entries(event.headers).some(
+        ([key, value]) =>
+            key.toLowerCase() === "x-origin-verify" && value === "library-explorer-proxy",
+    );
+    if (!hasValidOrigin) {
+        return errorResponse(403, "Forbidden");
     }
 
-    // Parse the target URL from query parameter
     const targetUrl = event.queryStringParameters?.url;
     if (!targetUrl) {
-        logRequest(
-            { targetUrl: "", sourceIp },
-            400,
-            0,
-            Date.now() - startTime,
-            "Missing url parameter",
-        );
-        return {
-            statusCode: 400,
-            body: JSON.stringify({ error: "Missing or invalid 'url' query parameter" }),
-            headers: { "Content-Type": "application/json" },
-        };
+        logRequest(sourceIp, "", 400, 0, latency(), "Missing url parameter");
+        return errorResponse(400, "Missing or invalid 'url' query parameter");
+    }
+
+    if (!isDomainAllowed(targetUrl)) {
+        logRequest(sourceIp, targetUrl, 403, 0, latency(), "Domain not whitelisted");
+        return errorResponse(403, "Domain not whitelisted");
     }
 
     try {
-        // Validate the domain
-        if (!isDomainAllowed(targetUrl)) {
-            const latency = Date.now() - startTime;
-            logRequest({ targetUrl, sourceIp }, 403, 0, latency, "Domain not whitelisted");
-            return {
-                statusCode: 403,
-                body: JSON.stringify({ error: "Domain not whitelisted" }),
-                headers: { "Content-Type": "application/json" },
-            };
-        }
-
-        // Fetch the target URL
-        const fetchController = new AbortController();
-        const fetchTimeout = setTimeout(() => fetchController.abort(), FETCH_TIMEOUT_MS);
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
         let response: Response;
         try {
             response = await fetch(targetUrl, {
-                signal: fetchController.signal,
-                headers: {
-                    "User-Agent": "Library-Explorer-Proxy/1.0",
-                },
+                signal: controller.signal,
+                headers: { "User-Agent": "Library-Explorer-Proxy/1.0" },
             });
         } finally {
-            clearTimeout(fetchTimeout);
+            clearTimeout(timeout);
         }
 
-        // Read the response body
         const responseBody = await response.text();
         const responseSize = Buffer.byteLength(responseBody);
 
-        // Check size limit
         if (responseSize > RESPONSE_SIZE_LIMIT_BYTES) {
-            const latency = Date.now() - startTime;
             logRequest(
-                { targetUrl, sourceIp },
+                sourceIp,
+                targetUrl,
                 413,
                 responseSize,
-                latency,
+                latency(),
                 "Response exceeds size limit",
             );
-            return {
-                statusCode: 413,
-                body: JSON.stringify({ error: "Response too large" }),
-                headers: { "Content-Type": "application/json" },
-            };
+            return errorResponse(413, "Response too large");
         }
 
-        // Success
-        const latency = Date.now() - startTime;
-        logRequest({ targetUrl, sourceIp }, response.status, responseSize, latency, null);
+        logRequest(sourceIp, targetUrl, response.status, responseSize, latency());
 
-        const headersToOmit = new Set([
-            "content-encoding",
-            "transfer-encoding",
-            "content-length",
-            "connection",
-        ]);
         const forwardedHeaders = Object.fromEntries(
-            Array.from(response.headers).filter(([key]) => !headersToOmit.has(key.toLowerCase())),
+            Array.from(response.headers).filter(([key]) => !HEADERS_TO_OMIT.has(key.toLowerCase())),
         );
 
         return {
@@ -155,15 +120,9 @@ export const handler = async (
             },
         };
     } catch (error: any) {
-        const latency = Date.now() - startTime;
-        const errorMessage =
+        const message =
             error?.name === "AbortError" ? "Request timeout" : error?.message || "Unknown error";
-        logRequest({ targetUrl, sourceIp }, 504, 0, latency, errorMessage);
-
-        return {
-            statusCode: 504,
-            body: JSON.stringify({ error: "Target API timeout or unreachable" }),
-            headers: { "Content-Type": "application/json" },
-        };
+        logRequest(sourceIp, targetUrl, 504, 0, latency(), message);
+        return errorResponse(504, "Target API timeout or unreachable");
     }
 };
